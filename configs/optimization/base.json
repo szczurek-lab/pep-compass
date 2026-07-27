@@ -25,6 +25,13 @@
       "mic_aggregate": "mean",
       "mic_bacteria": [1, 2, 3]
     },
+    "clasp": {
+      "variant": "product",
+      "lam": 0.1,
+      "merops_datasets": [7],
+      "merops_root": null,
+      "apex_index": 7
+    },
     "hydrophobicity": {
       "scale": "eisenberg"
     }

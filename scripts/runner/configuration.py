@@ -9,7 +9,7 @@ from itertools import product
 from pathlib import Path
 from typing import Any
 
-SUPPORTED_BLACK_BOXES = {"apex", "battleamp", "hydrophobicity", "toxipep"}
+SUPPORTED_BLACK_BOXES = {"apex", "battleamp", "clasp", "hydrophobicity", "toxipep"}
 SUPPORTED_CANDIDATE_STRATEGIES = {
     "lebo",
     "lpbebo",

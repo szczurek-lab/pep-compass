@@ -17,6 +17,10 @@ logger = logging.getLogger(__name__)
 OBJECTIVE_DESCRIPTIONS = {
     "apex": "Configured aggregate of log2 predicted MIC values.",
     "battleamp": "Log2 BattleAMP prediction; lower values are optimized.",
+    "clasp": (
+        "Log2 predicted MIC plus lambda times the MEROPS cleavage potential; "
+        "lower values are optimized."
+    ),
     "hydrophobicity": "Predicted peptide hydrophobicity on the configured scale.",
     "toxipep": "ToxiPep model prediction; lower values are optimized.",
 }
@@ -55,6 +59,10 @@ def run_task(task: dict[str, Any]) -> None:
             objective_parameters=config["black_box"],
             encoder_decoder=encoder_decoder,
             store_latents=tracking["store_latents"],
+            component_provider=getattr(
+                observed_black_box, "score_components_for", None
+            ),
+            component_fields=getattr(observed_black_box, "component_fields", ()),
         )
     else:
         from pep_compass.optimization.black_box.csv_observer import CSVObserver

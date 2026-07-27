@@ -1,0 +1,20 @@
+{
+  "extends": "../../base.json",
+  "black_box": {
+    "name": "clasp",
+    "clasp": {
+      "variant": "product",
+      "lam": 0.1,
+      "merops_datasets": [7],
+      "merops_root": null,
+      "apex_index": 7
+    }
+  },
+  "optimizer": {"lebo": {"candidate_strategy": "lebo"}},
+  "output_path": "./results/lebo_clasp",
+  "execution": {
+    "backend": "local",
+    "max_parallel_runs": 1,
+    "devices": ["cuda:0"]
+  }
+}

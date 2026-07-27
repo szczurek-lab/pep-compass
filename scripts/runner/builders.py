@@ -48,6 +48,19 @@ def build_black_box(config: dict[str, Any]):
             device=config["device"],
             **common,
         )
+    if name == "clasp":
+        from pep_compass.optimization.black_box.clasp_black_box import ClaspBlackBox
+
+        clasp = black_box["clasp"]
+        return ClaspBlackBox(
+            variant=clasp["variant"],
+            lam=clasp["lam"],
+            merops_datasets=clasp["merops_datasets"],
+            merops_root=clasp["merops_root"],
+            apex_index=clasp["apex_index"],
+            device=config["device"],
+            **common,
+        )
     if name == "battleamp":
         from pep_compass.optimization.black_box.battleamp_black_box import (
             BattleAMPBlackBox,
