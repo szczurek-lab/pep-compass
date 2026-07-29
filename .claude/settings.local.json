@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p /home/kjurasz/pep-compass/.claude/commands)",
+      "Bash(xargs ls -lt)",
+      "Bash(ls -lt /home/kjurasz/ | head -20)",
+      "Read(//home/kjurasz/**)",
+      "Bash(git log *)",
+      "Bash(python3 -c \"import json; d = json.load\\(open\\('/home/kjurasz/pep-compass/results/basic_eps_greedy_rl/agent_0_eps_1777464532_results.json'\\)\\); print\\(list\\(d.keys\\(\\)\\)\\)\")",
+      "Bash(git rm *)",
+      "Bash(/home/kjurasz/pep-compass/.venv/bin/python -c ' *)",
+      "Bash(/home/kjurasz/pep-compass/.venv/bin/python scripts/eps_greedy_rl.py -- --help)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebSearch",
+      "Bash(python -c \"import blosum as bl; m = bl.BLOSUM\\(62\\); print\\(type\\(m\\)\\); print\\(m['A']['A']\\); print\\(m['A']['R']\\)\")",
+      "Bash(python -c \"import blosum as bl; m = bl.BLOSUM\\(62\\); print\\(type\\(m\\)\\); print\\(type\\(m\\).__module__\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import blosum as bl; m = bl.BLOSUM\\(62\\); print\\(repr\\(m[' ']['A']\\)\\); print\\(repr\\(m['A'][' ']\\)\\)\")",
+      "WebFetch(domain:claude.ai)",
+      "Bash(chmod +x /home/kjurasz/pep-compass/scripts/eps_greedy_learn_gpu.sh)",
+      "Bash(python -m py_compile scripts/eps_greedy_learn.py)",
+      "Bash(python3 -m py_compile /home/kjurasz/pep-compass/scripts/eps_greedy_learn.py)"
+    ],
+    "additionalDirectories": [
+      "/home/kjurasz/pep-compass/.claude"
+    ]
+  }
+}
