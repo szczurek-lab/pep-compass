@@ -4,6 +4,9 @@ from importlib import import_module
 from typing import Any
 
 from pep_compass.optimization.components.oracles.manager import OracleManager
+from pep_compass.optimization.components.oracles.model_registry import (
+    register_oracle_models,
+)
 from pep_compass.optimization.components.oracles.strategies.black_box import BlackBoxOracle
 from pep_compass.utils.strategy_factory import parameter_contract
 
@@ -11,6 +14,8 @@ _COMMON = {
     "batch_size", "parallelize", "num_workers", "evaluation_budget",
     "force_isolation", "evaluation_batch_size",
 }
+
+register_oracle_models()
 
 
 def _black_box_oracle(
@@ -61,7 +66,7 @@ def build_apex_original(**parameters: Any) -> BlackBoxOracle:
 
 
 @OracleManager.register("battleamp")
-@parameter_contract(accepted=_COMMON | {"device"})
+@parameter_contract(accepted=_COMMON | {"device", "model", "models_directory"})
 def build_battleamp(**parameters: Any) -> BlackBoxOracle:
     """Build the BattleAMP oracle strategy."""
     return _black_box_oracle(
@@ -73,7 +78,9 @@ def build_battleamp(**parameters: Any) -> BlackBoxOracle:
 
 
 @OracleManager.register("eipred")
-@parameter_contract(accepted=_COMMON | {"mic_aggregate", "model_path"})
+@parameter_contract(
+    accepted=_COMMON | {"mic_aggregate", "model", "models_directory"}
+)
 def build_eipred(**parameters: Any) -> BlackBoxOracle:
     """Build the EIPred oracle strategy."""
     return _black_box_oracle(
@@ -97,7 +104,7 @@ def build_hydrophobicity(**parameters: Any) -> BlackBoxOracle:
 
 
 @OracleManager.register("mbc_attention")
-@parameter_contract(accepted=_COMMON | {"device"})
+@parameter_contract(accepted=_COMMON | {"device", "model", "models_directory"})
 def build_mbc_attention(**parameters: Any) -> BlackBoxOracle:
     """Build the MBC-Attention oracle strategy."""
     return _black_box_oracle(
@@ -109,7 +116,7 @@ def build_mbc_attention(**parameters: Any) -> BlackBoxOracle:
 
 
 @OracleManager.register("toxipep")
-@parameter_contract(accepted=_COMMON | {"device"})
+@parameter_contract(accepted=_COMMON | {"device", "model", "models_directory"})
 def build_toxipep(**parameters: Any) -> BlackBoxOracle:
     """Build the ToxiPep oracle strategy."""
     return _black_box_oracle(

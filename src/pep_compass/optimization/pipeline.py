@@ -80,7 +80,6 @@ class PepCompassPipeline:
         # Initial candidate representation
         with torch.no_grad():
             latent_origins = self.autoencoder.encode_peptides(sequences)  # (B, D)
-        batch = CandidateBatch(sequences, latent_origins)
         context = OptimizationContext(
             autoencoder=self.autoencoder,
             tracker=self.tracker,
@@ -88,6 +87,17 @@ class PepCompassPipeline:
             rng=np.random.default_rng(seed),
             state=OptimizationState(limits=self.limits),
             stability_monitor=self.stability_monitor,
+        )
+        candidate_ids = torch.as_tensor(
+            context.state.next_candidate_ids(len(sequences)),
+            dtype=torch.long,
+            device=latent_origins.device,
+        )  # (B,)
+        batch = CandidateBatch(sequences, latent_origins)
+        batch = batch.with_field("lineage.candidate_id", TensorField(candidate_ids))
+        batch = batch.with_field(
+            "lineage.parent_candidate_id",
+            TensorField(torch.full_like(candidate_ids, -1)),
         )
 
         # Computation lifecycle

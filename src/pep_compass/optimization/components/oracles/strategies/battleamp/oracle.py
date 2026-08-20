@@ -10,16 +10,28 @@ from einops import rearrange
 
 
 _battleamp_predictor = None
+_battleamp_predictor_key = None
 
 
-def _predict_in_isolated_process(sequences: list[str]) -> np.ndarray:
-    global _battleamp_predictor
-    if _battleamp_predictor is None:
+def _predict_in_isolated_process(
+    sequences: list[str],
+    model: str,
+    models_directory: str | None,
+) -> np.ndarray:
+    """Evaluate BattleAMP in the reusable TensorFlow worker process."""
+    global _battleamp_predictor, _battleamp_predictor_key
+    predictor_key = (model, models_directory)
+    if _battleamp_predictor is None or _battleamp_predictor_key != predictor_key:
         from pep_compass.optimization.components.oracles.strategies.battleamp.BattleAMPPredictor import (
             PredictorBattleAMP,
         )
 
-        _battleamp_predictor = PredictorBattleAMP(device="cpu")
+        _battleamp_predictor = PredictorBattleAMP(
+            device="cpu",
+            model=model,
+            models_directory=models_directory,
+        )
+        _battleamp_predictor_key = predictor_key
     return _battleamp_predictor.predict(sequences).flatten()
 
 
@@ -33,6 +45,8 @@ class BattleAMPBlackBox(AbstractBlackBox):
         evaluation_budget: int = float("inf"),
         force_isolation: bool = False,
         device: str = "cpu",
+        model: str = "default",
+        models_directory: str | None = None,
     ):
         super().__init__(
             batch_size=batch_size,
@@ -43,6 +57,8 @@ class BattleAMPBlackBox(AbstractBlackBox):
         )
         
         self.device = device
+        self.model_name = model
+        self.models_directory = models_directory
         self._executor = None
         if str(device).startswith("cuda"):
             # Max - debbuging: Zmiana z uruchamiania BattleAMP i PyTorch w jednym procesie na uruchamianie BattleAMP w osobnym procesie CPU ~TensorFlow pozostaje odseparowany od procesu, w którym PyTorch wykonuje LE-BO na GPU, dzięki czemu nie inicjalizuje tam CUDA i nie zakłóca działania cuSOLVER.
@@ -56,7 +72,11 @@ class BattleAMPBlackBox(AbstractBlackBox):
                 PredictorBattleAMP,
             )
 
-            self.battleamp_predictor = PredictorBattleAMP(device=device)
+            self.battleamp_predictor = PredictorBattleAMP(
+                device=device,
+                model=model,
+                models_directory=models_directory,
+            )
 
         self.maximize = False
 
@@ -79,7 +99,10 @@ class BattleAMPBlackBox(AbstractBlackBox):
         sequences = ["".join(seq) for seq in x]
         if self._executor is not None:
             predictions = self._executor.submit(
-                _predict_in_isolated_process, sequences
+                _predict_in_isolated_process,
+                sequences,
+                self.model_name,
+                self.models_directory,
             ).result()
         else:
             predictions = self.battleamp_predictor.predict(sequences).flatten()

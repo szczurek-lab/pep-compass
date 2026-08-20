@@ -143,6 +143,7 @@ class RuntimeRunner:
             store_latents=self.configuration.tracking.store_latents,
             store_fields=self.configuration.tracking.store_fields,
             field_names=self.configuration.tracking.field_names,
+            candidate_snapshots=self.configuration.tracking.candidate_snapshots,
             run_id=entry.run_id,
             variant_id=entry.variant.variant_id,
         )

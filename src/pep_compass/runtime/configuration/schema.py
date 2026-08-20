@@ -26,6 +26,7 @@ class TrackingConfiguration:
     store_latents: bool = False
     store_fields: bool = False
     field_names: tuple[str, ...] | None = None
+    candidate_snapshots: Literal["none", "oracle", "all"] = "none"
     monitor_stability: bool = True
 
 

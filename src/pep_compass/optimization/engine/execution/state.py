@@ -57,6 +57,7 @@ class OptimizationState:
     generated_candidates: int = 0
     completed_iterations: int = 0
     created_points: int = 0
+    created_candidates: int = 0
     stop_requested: bool = False
     trust_regions: dict[str, TrustRegionState] = field(default_factory=dict)
 
@@ -127,3 +128,19 @@ class OptimizationState:
         start = self.created_points
         self.created_points += count
         return tuple(range(start, self.created_points))
+
+    def next_candidate_ids(self, count: int) -> tuple[int, ...]:
+        """Allocate run-local identities for materialized candidates.
+
+        :param count: Number of identities to allocate.
+        :return: Monotonically increasing candidate identities.
+        :raises ValueError: If ``count`` is negative.
+
+        REMARK: These identifiers describe provenance, not candidate equality.
+        Filters may remove rows, while deduplication may collapse equal sequences.
+        """
+        if count < 0:
+            raise ValueError("Candidate identity count cannot be negative.")
+        start = self.created_candidates
+        self.created_candidates += count
+        return tuple(range(start, self.created_candidates))

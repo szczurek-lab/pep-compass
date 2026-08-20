@@ -1,47 +1,59 @@
-"""Filter strategy registry."""
-
-from typing import Callable
+"""Filter registry facade retained at the component-family boundary."""
 
 from pep_compass.optimization.components.filters.base import Filter
-from pep_compass.utils.strategy_factory import build_with_services, validate_factory_parameters
+from pep_compass.registry import Registry, component_catalog
 
 
 class FilterManager:
     """Map configured filter names to factories used by ``PipelineBuilder``."""
 
-    _registry: dict[str, Callable[..., Filter]] = {}
+    registry: Registry[Filter] = Registry("filter", expected_type=Filter)
 
     @classmethod
     def register(
-        cls, name: str
-    ) -> Callable[[Callable[..., Filter]], Callable[..., Filter]]:
+        cls, name: str, **kwargs
+    ):
         """Register a filter factory."""
-
-        def decorator(factory: Callable[..., Filter]) -> Callable[..., Filter]:
-            cls._registry[name] = factory
-            return factory
-
-        return decorator
+        kwargs.setdefault("services", {"autoencoder"})
+        return cls.registry.register(name, **kwargs)
 
     @classmethod
     def build(cls, method: str, *, services=None, **parameters) -> Filter:
         """Construct a registered filter strategy."""
-        try:
-            factory = cls._registry[method]
-        except KeyError as error:
-            raise ValueError(f"Unknown filter method: {method}") from error
-        return build_with_services(factory, parameters, services)
+        return cls.registry.build(method, parameters, services=services)
 
     @classmethod
     def methods(cls) -> tuple[str, ...]:
         """Return registered filter method names."""
-        return tuple(sorted(cls._registry))
+        return cls.registry.names()
 
     @classmethod
     def validate(cls, method: str, parameters) -> None:
         """Validate a strategy declaration without constructing the filter."""
-        try:
-            factory = cls._registry[method]
-        except KeyError as error:
-            raise ValueError(f"Unknown filter method: {method}") from error
-        validate_factory_parameters(factory, parameters, service_names={"autoencoder"})
+        cls.registry.validate(method, parameters)
+        if method != "ranked":
+            return
+        from pep_compass.optimization.components.filters.ranked.registry import (
+            scoring_registry,
+            selection_registry,
+        )
+
+        cls._validate_nested("scoring", parameters["scoring"], scoring_registry)
+        cls._validate_nested("selection", parameters["selection"], selection_registry)
+
+    @staticmethod
+    def _validate_nested(name: str, declaration, registry) -> None:
+        """Validate one ``{method, parameters}`` nested declaration."""
+        if not isinstance(declaration, dict) or not isinstance(
+            declaration.get("method"), str
+        ):
+            raise ValueError(f"ranked.{name} must declare a string method.")
+        parameters = declaration.get("parameters", {})
+        if not isinstance(parameters, dict):
+            raise ValueError(f"ranked.{name}.parameters must be a mapping.")
+        registry.validate(declaration["method"], parameters)
+
+
+component_catalog.register_family(
+    "filter", FilterManager.registry, validator=FilterManager.validate
+)

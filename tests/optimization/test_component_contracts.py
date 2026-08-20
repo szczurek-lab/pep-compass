@@ -20,17 +20,17 @@ from pep_compass.optimization.components.walkers import WalkerManager
 @pytest.mark.parametrize(
     "registry",
     (
-        WalkerManager._registry,
-        MutationGeneratorManager._registry,
-        FilterManager._registry,
-        OracleManager._registry,
+        WalkerManager.registry,
+        MutationGeneratorManager.registry,
+        FilterManager.registry,
+        OracleManager.registry,
     ),
 )
 def test_registered_component_factories_have_stable_non_empty_names(registry) -> None:
     """Every component family must expose callable factories for validation."""
-    assert registry
-    assert all(isinstance(name, str) and name for name in registry)
-    assert all(callable(factory) for factory in registry.values())
+    assert registry.names()
+    assert all(isinstance(name, str) and name for name in registry.names())
+    assert all(callable(factory) for factory in registry.entries.values())
 
 
 def test_oracle_registration_does_not_import_model_implementations() -> None:
@@ -60,3 +60,34 @@ assert implementation_modules.isdisjoint(sys.modules)
         "mbc_attention",
         "toxipep",
     )
+
+
+def test_nested_strategy_registries_reject_unknown_methods() -> None:
+    """Nested SORBES, MUTANG, and ranked methods must be validated explicitly."""
+    with pytest.raises(ValueError, match="Unknown SORBES geometry strategy"):
+        WalkerManager.validate(
+            "sorbes",
+            {"geometry": {"method": "missing", "parameters": {}}},
+        )
+    with pytest.raises(ValueError, match="Unknown MUTANG geometry strategy"):
+        MutationGeneratorManager.validate(
+            "mutang",
+            {"strategies": {"geometry": {"method": "missing"}}},
+        )
+    with pytest.raises(ValueError, match="Unknown ranked-filter scoring strategy"):
+        FilterManager.validate(
+            "ranked",
+            {
+                "scoring": {"method": "missing", "parameters": {}},
+                "selection": {
+                    "method": "threshold",
+                    "parameters": {"threshold": 0.5},
+                },
+            },
+        )
+
+
+def test_oracle_registry_rejects_unknown_named_model() -> None:
+    """Oracle configuration validation must reject unknown model variants."""
+    with pytest.raises(ValueError, match="Unknown model oracle.battleamp/missing"):
+        OracleManager.validate("battleamp", {"model": "missing"})

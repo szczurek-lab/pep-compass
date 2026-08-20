@@ -51,9 +51,13 @@ autoencoder:
 
 tracking:
   level: short
-  # REMARK: level: "short" (oracle executions + evaluated candidates only) |
-  # REMARK: "normal" (default; + step summaries/sizes/timings/counters) |
-  # REMARK: "all" (+ candidates produced by every enabled step).
+  # REMARK: level: "short" (oracle summaries only) | "normal" (default;
+  # REMARK: step summaries + streamed LocalEnumeration/SORBES checkpoints) |
+  # REMARK: "all" (same scalar tracking at every enabled depth).
+  candidate_snapshots: none
+  # REMARK: candidate_snapshots: "none" (default; final candidates remain in
+  # REMARK: candidates.csv) | "oracle" | "all". Keep this at "none" for
+  # REMARK: production; replay checkpoints are independent and remain compact.
   max_depth: null
   # REMARK: limit tracking collection by execution-tree depth without changing
   # REMARK: which steps actually execute.

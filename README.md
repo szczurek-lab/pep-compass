@@ -100,15 +100,14 @@ uv run --extra cu118 pep-compass run \
 Every command and flag (`--device`, `--run-index`, backends, Slurm) is
 documented in [User Guide § Commands](docs/user-guide.md#commands).
 
-## Tutorials
+## Guides
 
-1. [User Guide](docs/user-guide.md) — configure and execute an experiment, then
-   inspect its result files.
-2. [Technical Architecture](docs/technical-architecture.md) — follow candidate
-   and latent-position data through the runtime.
-3. [Developer Guide](docs/developer-guide.md) — add and validate a component.
-4. [Analysis Guide](docs/analysis-guide.md) — read persisted results back with
-   `analysis.reader`.
+- [User Guide](docs/user-guide.md) — configure and execute an experiment.
+- [Analysis Guide](docs/analysis-guide.md) — inspect persisted results with
+  `analysis.reader`.
+- [Technical Architecture](docs/technical-architecture.md) — inspect internal
+  component and data flow.
+- [Developer Guide](docs/developer-guide.md) — extend and validate the package.
 
 ## Documentation
 
@@ -122,4 +121,4 @@ The complete documentation entry page is [docs/README.md](docs/README.md).
 
 ## Citation
 
-#TODO - wstawic artykuł do cytacji 
+If you use our model cite [this article](https://www.researchgate.net/publication/396142806_PepCompass_Navigating_peptide_embedding_spaces_using_Riemannian_Geometry)

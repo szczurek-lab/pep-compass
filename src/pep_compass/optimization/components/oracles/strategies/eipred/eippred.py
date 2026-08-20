@@ -434,7 +434,7 @@ def features_calulate(file_path, output_file):
             allowed = set(('A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'))
             is_data_invalid = set(data1).issubset(allowed)
             if is_data_invalid==False:
-                print("Error: Please check for invalid inputs in the sequence.","\nError in: ","Sequence number=",i+1,",","Sequence = ",data[i],",","\nNOTE: Spaces, Special characters('[@_!#$%^&*()<>?/\|}{~:]') and Extra characters(BJOUXZ) should not be there.")
+                print("Error: Please check for invalid inputs in the sequence.","\nError in: ","Sequence number=",i+1,",","Sequence = ",data[i],",","\nNOTE: Spaces, Special characters('[@_!#$%^&*()<>?/\\|}{~:]') and Extra characters(BJOUXZ) should not be there.")
                 return
             Val.append(round((entropy_single(str(data[i]))),3))
             #print(Val[i])
@@ -459,7 +459,7 @@ def features_calulate(file_path, output_file):
             allowed = set(('A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'))
             is_data_invalid = set(data1).issubset(allowed)
             if is_data_invalid==False:
-                print("Error: Please check for invalid inputs in the sequence.","\nError in: ","Sequence number=",i+1,",","Sequence = ",data[i],",","\nNOTE: Spaces, Special characters('[@_!#$%^&*()<>?/\|}{~:]') and Extra characters(BJOUXZ) should not be there.")
+                print("Error: Please check for invalid inputs in the sequence.","\nError in: ","Sequence number=",i+1,",","Sequence = ",data[i],",","\nNOTE: Spaces, Special characters('[@_!#$%^&*()<>?/\\|}{~:]') and Extra characters(BJOUXZ) should not be there.")
                 return
             seq=data[i]
             seq=seq.upper()
@@ -1595,12 +1595,27 @@ class EIPredPredictor:
     - predict(seq_list): returns MIC predictions in uM, shape (n_sequences, 1)
     """
     
-    def __init__(self, device='cpu', batch_size=1000):
+    def __init__(
+        self,
+        device="cpu",
+        batch_size=1000,
+        model="default",
+        models_directory=None,
+    ):
+        from pep_compass.optimization.components.oracles.model_registry import (
+            resolve_oracle_model,
+        )
+
         self.device = device  # Not used but kept for interface compatibility
         self.batch_size = batch_size
         self.nf_path = nf_path
-        self.model_path = os.path.join(self.nf_path, 'DATA', 'model2.pkl', 'model2.pkl')
-        self.features_path = os.path.join(self.nf_path, 'DATA', 'selected_features_mrmr1000_new.csv')
+        self.model_name = model
+        _, model_paths = resolve_oracle_model(
+            "eipred",
+            model,
+            models_directory=models_directory,
+        )
+        self.model_path, self.features_path = map(str, model_paths)
         self.clf = None
         self.selected_features = None
         

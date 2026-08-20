@@ -83,6 +83,44 @@ class ProgressReporter:
 
 
 @dataclass(slots=True)
+class NestedProgress:
+    """Track one overall bar across stages, plus a resettable current-stage bar.
+
+    Each :meth:`start_stage` call replaces the current-stage reporter; the
+    previous one has already printed its own completion line on its last
+    :meth:`update` (a :class:`ProgressReporter` reaches 100% on the update
+    that meets its ``total`), so no explicit finalize step is needed.
+
+    :param label: Human-readable computation name.
+    :param total: Total rows expected across every stage.
+    :param enabled: Whether progress output is emitted.
+    """
+
+    label: str
+    total: int
+    enabled: bool = True
+    _overall: ProgressReporter = field(init=False)
+    _current: ProgressReporter | None = field(default=None, init=False)
+
+    def __post_init__(self) -> None:
+        self._overall = ProgressReporter(
+            f"{self.label}:overall", self.total, enabled=self.enabled
+        )
+
+    def start_stage(self, stage_label: str, stage_total: int) -> None:
+        """Start a new current-stage bar, e.g. one per processed run."""
+        self._current = ProgressReporter(
+            f"{self.label}:{stage_label}", stage_total, enabled=self.enabled
+        )
+
+    def update(self, rows: int) -> None:
+        """Advance both the current-stage bar and the overall bar."""
+        if self._current is not None:
+            self._current.update(rows)
+        self._overall.update(rows)
+
+
+@dataclass(slots=True)
 class RunningMoments:
     """Accumulate finite values without retaining individual observations."""
 

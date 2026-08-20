@@ -6,6 +6,7 @@ from typing import Any
 
 from pep_compass.autoencoder.base import Autoencoder
 from pep_compass.autoencoder.registry import AutoencoderRegistry
+from pep_compass.registry import load_builtin_registrations
 
 
 class AutoencoderFactory:
@@ -27,7 +28,7 @@ class AutoencoderFactory:
         :param parameters: Explicit overrides for descriptor parameters.
         :return: Initialized autoencoder implementation.
         """
-        import pep_compass.autoencoder.strategies  # noqa: F401
+        load_builtin_registrations()
 
         descriptor = AutoencoderRegistry.model(method, model)
         resolved = {**descriptor.parameters, **parameters}

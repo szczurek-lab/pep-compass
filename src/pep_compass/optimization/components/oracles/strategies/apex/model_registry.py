@@ -5,6 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from pep_compass.optimization.components.oracles.model_registry import (
+    resolve_oracle_model,
+)
+
 
 _DEFAULT_PATHOGENS = (
     "A. baumannii ATCC 19606",
@@ -94,23 +98,9 @@ def resolve_apex_weights(
         raise ValueError(
             f"Unknown APEX model: {model!r}. Available models: {sorted(APEX_MODELS)}."
         ) from error
-    root = (
-        Path(models_directory)
-        if models_directory is not None
-        else Path(__file__).resolve().parent / "models"
+    _, paths = resolve_oracle_model(
+        "apex",
+        model,
+        models_directory=models_directory,
     )
-    directory = root / descriptor.directory
-    if not directory.is_dir():
-        raise FileNotFoundError(
-            f"APEX model directory not found: {directory}. Run "
-            f"{descriptor.download_script} to install the '{model}' model weights."
-        )
-    paths = tuple(sorted(directory.glob(descriptor.pattern)))
-    if len(paths) != descriptor.expected_models:
-        raise FileNotFoundError(
-            f"Incomplete APEX '{model}' ensemble under {directory}: expected "
-            f"{descriptor.expected_models} weight files matching "
-            f"'{descriptor.pattern}', found {len(paths)}. Run "
-            f"{descriptor.download_script} to reinstall the ensemble."
-        )
     return descriptor, paths

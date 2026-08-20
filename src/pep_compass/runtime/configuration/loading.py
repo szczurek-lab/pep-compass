@@ -81,6 +81,7 @@ def _parse_runtime_configuration(
                 if tracking_raw.get("field_names") is not None
                 else None
             ),
+            candidate_snapshots=tracking_raw.get("candidate_snapshots", "none"),
             monitor_stability=bool(tracking_raw.get("monitor_stability", True)),
         ),
         execution=ExecutionConfiguration(

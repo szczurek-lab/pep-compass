@@ -13,13 +13,10 @@ from pep_compass.core.specification import (
     StepSpecification,
 )
 from pep_compass.core.estimation import estimate_pipeline_stability
-from pep_compass.core.validation import validate_pipeline_specification
-from pep_compass.optimization.components.filters import FilterManager
-from pep_compass.optimization.components.mutation_generators import (
-    MutationGeneratorManager,
+from pep_compass.core.validation import (
+    validate_pipeline_specification,
+    validate_registered_components,
 )
-from pep_compass.optimization.components.oracles import OracleManager
-from pep_compass.optimization.components.walkers import WalkerManager
 from pep_compass.optimization.engine import (
     Flow,
     LocalEnumeration,
@@ -35,6 +32,7 @@ from pep_compass.optimization.stability_estimation.monitoring import (
 from pep_compass.optimization.engine.execution.step import Step
 from pep_compass.optimization.tracking import StepTracker
 from pep_compass.utils.logger import get_custom_logger
+from pep_compass.registry import component_catalog, load_builtin_registrations
 
 logger = get_custom_logger(__name__)
 
@@ -72,6 +70,7 @@ class PipelineBuilder:
         :return: Fully initialized executable pipeline.
         """
         validate_pipeline_specification(specification)
+        validate_registered_components(specification)
         root = self._build_step(specification.root)
         stability_monitor = stability_monitor or NullStabilityMonitor()
         if isinstance(stability_monitor, StabilityMonitor):
@@ -107,10 +106,7 @@ class PipelineBuilder:
     @staticmethod
     def _load_builtin_components() -> None:
         """Load built-in component registrations before resolution."""
-        import pep_compass.optimization.components.filters.registry  # noqa: F401
-        import pep_compass.optimization.components.mutation_generators.strategies  # noqa: F401
-        import pep_compass.optimization.components.oracles.strategies  # noqa: F401
-        import pep_compass.optimization.components.walkers.strategies  # noqa: F401
+        load_builtin_registrations()
 
     def _build_step(self, specification: StepSpecification) -> Step:
         """Recursively construct one declared computation node."""
@@ -155,24 +151,14 @@ class PipelineBuilder:
         that registry. Construction occurs once while building the pipeline;
         execution later follows the already constructed ``Step`` tree.
         """
-        # Component family selected by the YAML operation key
-        managers = {
-            "walker": WalkerManager,
-            "mutation_generator": MutationGeneratorManager,
-            "filter": FilterManager,
-            "oracle": OracleManager,
-        }
-        manager = managers[specification.kind]
+        # Component family and strategy selected through the shared catalog.
         parameters = dict(specification.parameters)
         services = {"autoencoder": self.autoencoder}
-
-        # Registered strategy factory selected by the configured method name
-        if specification.kind == "oracle":
-            return manager.build(specification.method, **parameters)
-        return manager.build(
+        return component_catalog.build(
+            specification.kind,
             specification.method,
+            parameters,
             services=services,
-            **parameters,
         )
 
 

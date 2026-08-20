@@ -25,9 +25,8 @@ def build_sorbes(
     vertical_movement=True,
 ):
     """Build the fixed SORBES algorithm from nested stage declarations."""
-    del scaling, boundary
-    # REMARK: Flat keys remain temporarily accepted until experiment configs
-    # are migrated in the separate configuration pass.
+    # SORBES retains a fixed stage order while every stage implementation is
+    # selected from its dedicated registry.
     if geometry is None:
         geometry = {
             "method": "kappa_stable",
@@ -46,12 +45,18 @@ def build_sorbes(
                 "delta_max": float(max_horizontal_update_norm or 0.5),
             },
         }
+    if scaling is None:
+        scaling = {"method": "stable_dimension", "parameters": {}}
+    if boundary is None:
+        boundary = {"method": "main", "parameters": {}}
     stages = SorbesStrategyManager.build(
         autoencoder,
         {
             "geometry": geometry,
             "directions": directions,
+            "scaling": scaling,
             "position_update": position_update,
+            "boundary": boundary,
         },
     )
     return SorbesWalker(Sorbes(autoencoder, *stages))

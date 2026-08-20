@@ -7,6 +7,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from pep_compass.autoencoder.base import Autoencoder
+from pep_compass.registry import (
+    ModelArtifact,
+    ModelDescriptor,
+    Registry,
+    model_catalog,
+)
 
 
 AutoencoderFactoryCallable = Callable[..., Autoencoder]
@@ -22,13 +28,17 @@ class AutoencoderModelDescriptor:
 
     name: str
     parameters: dict[str, Any]
+    directory: str | None = None
+    artifacts: tuple[ModelArtifact, ...] = ()
+    download_script: str | None = None
 
 
 class AutoencoderRegistry:
     """Store autoencoder factories and named model descriptors."""
 
-    _methods: dict[str, AutoencoderFactoryCallable] = {}
-    _models: dict[str, dict[str, AutoencoderModelDescriptor]] = {}
+    _method_registry: Registry[Autoencoder] = Registry(
+        "autoencoder", expected_type=Autoencoder
+    )
 
     @classmethod
     def register_method(
@@ -36,16 +46,7 @@ class AutoencoderRegistry:
         name: str,
     ) -> Callable[[AutoencoderFactoryCallable], AutoencoderFactoryCallable]:
         """Return a decorator registering one autoencoder implementation."""
-        if not name:
-            raise ValueError("Autoencoder method name cannot be empty.")
-
-        def decorator(factory: AutoencoderFactoryCallable) -> AutoencoderFactoryCallable:
-            if name in cls._methods:
-                raise ValueError(f"Autoencoder method is already registered: {name}")
-            cls._methods[name] = factory
-            return factory
-
-        return decorator
+        return cls._method_registry.register(name)
 
     @classmethod
     def register_model(
@@ -54,35 +55,39 @@ class AutoencoderRegistry:
         descriptor: AutoencoderModelDescriptor,
     ) -> None:
         """Register a named model variant for an autoencoder method."""
-        models = cls._models.setdefault(method, {})
-        if descriptor.name in models:
-            raise ValueError(
-                f"Autoencoder model is already registered: {method}/{descriptor.name}"
+        model_catalog.register(
+            ModelDescriptor(
+                provider=f"autoencoder.{method}",
+                name=descriptor.name,
+                directory=descriptor.directory or descriptor.name,
+                artifacts=descriptor.artifacts,
+                parameters=dict(descriptor.parameters),
+                download_script=descriptor.download_script,
             )
-        models[descriptor.name] = descriptor
+        )
 
     @classmethod
     def method(cls, name: str) -> AutoencoderFactoryCallable:
         """Return a registered autoencoder factory."""
-        try:
-            return cls._methods[name]
-        except KeyError as error:
-            raise ValueError(f"Unknown autoencoder method: {name}") from error
+        return cls._method_registry.factory(name)
 
     @classmethod
-    def model(cls, method: str, name: str) -> AutoencoderModelDescriptor:
+    def model(cls, method: str, name: str) -> ModelDescriptor:
         """Return a named model descriptor for a method."""
         try:
-            return cls._models[method][name]
-        except KeyError as error:
-            raise ValueError(f"Unknown autoencoder model: {method}/{name}") from error
+            return model_catalog.descriptor(f"autoencoder.{method}", name)
+        except ValueError as error:
+            raise ValueError(
+                f"Unknown autoencoder model: {method}/{name}. "
+                f"Available: {list(cls.models(method))}."
+            ) from error
 
     @classmethod
     def methods(cls) -> tuple[str, ...]:
         """Return registered method names in deterministic order."""
-        return tuple(sorted(cls._methods))
+        return cls._method_registry.names()
 
     @classmethod
     def models(cls, method: str) -> tuple[str, ...]:
         """Return named model variants registered for a method."""
-        return tuple(sorted(cls._models.get(method, {})))
+        return model_catalog.names(f"autoencoder.{method}")

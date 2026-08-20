@@ -168,6 +168,8 @@ tracking:
   max_depth: null
   store_latents: false
   store_fields: false
+  field_names: null
+  candidate_snapshots: none
   monitor_stability: true
 
 execution:
@@ -247,14 +249,16 @@ new strategy registration. `jacobian_eps` and `field_eps` are required;
 
 ### `tracking`
 
-`level` accepts `short` (oracle executions and evaluated candidates only),
+`level` accepts `short` (oracle step summaries only),
 `normal` (adds step summaries, sizes, timings and counters — the default), or
-`all` (additionally records the candidates produced by every enabled step).
-`max_depth` limits collection by execution-tree depth without changing which
-steps execute. `store_latents` serialises candidate latent origins into
-tracking rows; `store_fields` serialises algorithm fields (can be large when
-SORBES tangent-space matrices are present). `monitor_stability` enables the
-runtime memory monitor (see
+`all` (adds summaries for every enabled step). `max_depth` limits collection
+by execution-tree depth without changing which steps execute.
+`candidate_snapshots` controls candidate-row retention independently: `none`
+(default), `oracle` (oracle steps only), or `all` (every enabled step).
+`store_latents` serialises candidate latent origins into retained rows.
+`store_fields` serialises algorithm fields; `field_names`, when set, limits
+those fields to the listed names. `monitor_stability` enables the runtime
+memory monitor (see
 [Technical Architecture](technical-architecture.md#stability-estimation)).
 
 ### `execution`
@@ -265,7 +269,7 @@ runtime memory monitor (see
 
 ### Output files
 
-Each run directory contains:
+Each completed run directory contains:
 
 ```text
 variants/<variant_id>/runs/<run_id>/
@@ -281,12 +285,17 @@ variants/<variant_id>/runs/<run_id>/
     local_enumerations.csv
     replay_manifest.json
     stability.csv
+    run.log
+    checkpoints/
+      trajectory/
+      local_enumeration/
 ```
 
-`variants/<variant_id>/` is only present when the grid materialises more than
-one variant. `result.json` reports `null` objective, best sequence and best
-score for an experiment without an oracle, and a completed result with zero
-candidates is valid when filters remove the entire pool before evaluation.
+The writer always uses `variants/<variant_id>/runs/<run_id>/`, including for a
+configuration with no grid. `result.json` reports `null` objective, best
+sequence and best score for an experiment without an oracle, and a completed
+result with zero candidates is valid when filters remove the entire pool before
+evaluation.
 See [Technical Architecture](technical-architecture.md#tracking) for what
 each tracking file contains, and the
 [Analysis Guide](analysis-guide.md) for reading this layout back
@@ -310,7 +319,7 @@ mutation generators and requests termination once the threshold is reached.
 ### Pipeline steps
 
 Every entry under `pipeline.steps` (and every nested `steps` list) is a
-single-key mapping. Six operation keys exist
+single-key mapping. Seven operation keys exist
 (`runtime/configuration/pipeline.py`):
 
 - **`walker`**, **`mutation_generator`**, **`filter`**, **`oracle`** — leaf
@@ -394,11 +403,12 @@ updating the responsible strategy's `parameter_contract` and this table (see
 
 - `sorbes` — one SORBES step: latent geometry, direction sampling, an
   adaptive position update and a boundary check, in that fixed order. Accepts
-  `geometry`, `directions` and `position_update` as `{method, parameters}`
-  sub-strategies (only `position_update.method` — `main`, `article` or
-  `without_acceleration` — is currently pluggable) plus a legacy flat form
-  (`horizontal_threshold`, `time_step`, `max_horizontal_update_norm`,
-  `vertical_movement`) that is converted automatically.
+  `geometry`, `directions`, `scaling`, `position_update` and `boundary` as
+  `{method, parameters}` sub-strategies. The built-in methods are
+  `kappa_stable`, `active_inactive`, `stable_dimension`, `main`, and, for
+  `position_update`, also `article` and `without_acceleration`. A legacy flat
+  form (`horizontal_threshold`, `time_step`, `max_horizontal_update_norm`,
+  `vertical_movement`) is converted to the corresponding nested defaults.
 
 ### Mutation Generators
 
@@ -457,8 +467,8 @@ comparison), `battleamp`, `eipred`, `hydrophobicity`, `mbc_attention` and
 `toxipep`. Every oracle is a `BlackBoxOracle` adapter and accepts optional
 POLI controls (`batch_size`, `parallelize`, `num_workers`,
 `evaluation_budget`, `force_isolation`) plus `evaluation_batch_size`. APEX
-additionally requires `model` (a named weight variant, for example
-`default`). BattleAMP and MBC-Attention require TensorFlow in the runtime
+accepts `model` as a named weight variant and defaults to `default` when it is
+omitted. BattleAMP and MBC-Attention require TensorFlow in the runtime
 environment. Model-specific parameters are validated before model
 construction; a lazily-imported oracle module does not prevent library import
 when its dependency is missing.

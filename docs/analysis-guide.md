@@ -4,16 +4,21 @@
 [User Guide](user-guide.md#output-files)) and computes derived tables and
 plots. It is a **separate, read-only consumer**: it never imports
 `runtime`, `core`, or the execution engine, and it cannot change what a run
-produced — only interpret it after the fact. If you are looking for how a
-pipeline runs, see [Technical Architecture](technical-architecture.md).
+produced; it only interprets it after the fact.
+
+> If you are looking for how a pipeline runs, see
+> [Technical Architecture](technical-architecture.md).
+
+> Remark:
+> To reduce memory use, the reader stores only seeds and reconstructs analyses
+> from those seeds.
 
 ## `analysis.reader`
 
 `analysis.reader` discovers, selects and lazily reads tracking output
-without loading whole tables into memory unless asked to. A complete,
-runnable walkthrough of every entry point below lives in
-[`assets/experiments/example_notebook..ipynb`](../assets/experiments/example_notebook..ipynb)
-— open it rather than re-deriving these examples by hand.
+without loading whole tables into memory unless asked to. The available result
+schema is illustrated in
+[`assets/experiments/schema_example_notebook_for_analysis.ipynb`](../assets/experiments/schema_example_notebook_for_analysis.ipynb).
 
 ### `ExperimentReader`
 
@@ -28,10 +33,9 @@ reader.cached_analyses()
 ```
 
 `ExperimentReader(path)` accepts a collection root, an experiment directory,
-or a single tracking-run directory, and discovers runs from whichever
-on-disk layout is present (the current versioned `variants/*/runs/*/
-result.json` layout, or an older `run_manifest.csv`/`tracking_metadata.json`
-layout) without loading any tracking table. It also opens a
+or a single tracking-run directory. The supported result layout is the
+versioned `variants/*/runs/*/result.json` layout written by the current
+runtime. Discovery does not load tracking tables. The reader also opens a
 `.pep_compass_analysis.sqlite` cache next to the opened root (see
 [`MetricsStore`](#metricsstore)).
 
@@ -106,23 +110,15 @@ parameters (`put_analysis`/`get_analysis`/`list_analyses`/`load_analysis`).
 
 ## `analysis_types`, `resampling`, `visualization`
 
-- **`analysis_types/locality`** (`LocalityAnalysis`, `parameter_selection`,
-  and per-component analyses in `sorbes.py`/`mutang.py`/
-  `latent_geometry.py`) computes locality-experiment summaries directly from
-  an `ExperimentSelection`, streaming over chunks (`_streaming.py`:
-  `ProgressReporter`, `Reservoir`, `RunningMoments`) rather than materialising
-  full tables, and returns an `AnalysisResult` (`data`, `metadata`,
-  `diagnostics`).
+- **`analysis_types/locality`** exposes `LocalityAnalysis` with the maintained
+  `latent_jump` and `sorbes_trajectory_profile` analyses. Both consume an
+  `ExperimentSelection`, stream the required tracking tables and return an
+  `AnalysisResult` (`data`, `metadata`, `diagnostics`).
 - **`resampling`** (`bootstrap.py`: `ClusterSampler`, `RowSampler`,
   `BootstrapEngine`) provides resampling utilities for uncertainty estimates
   over analysis outputs.
 - **`visualization`** (`locality.py`: `LocalityVisualizer`, `theme.py`:
   `PlotTheme`) renders `AnalysisResult` tables produced by `analysis_types`.
-- **`experiment.py`** (`VisualizationCollection`) is a thin composition
-  facade wiring one visualizer per registered analysis type.
-
-This layer is under active revision — `src/pep_compass/analysis/README.md`
-tracks open restructuring notes for the visualization/analysis split. Treat
-new analyses the same way `locality` is built: accept an `ExperimentSelection`
-or `ExperimentDataset`, never a raw path or an ad hoc dict, and return an
-`AnalysisResult`.
+- **`experiment.py`** (`ExperimentAnalysis`) is a thin composition facade that
+  exposes the locality analysis and its `LocalityVisualizer` through one
+  selection.

@@ -148,6 +148,10 @@ include-package-data = true
 [tool.setuptools.package-data]
 "pep_compass.autoencoder.strategies.hydramp" = ["models/**/*.pickle"]
 "pep_compass.optimization.components.helpers.substitution_matrices" = ["matrices/*.txt"]
+"pep_compass.optimization.components.oracles.strategies.battleamp" = ["model.h5"]
+"pep_compass.optimization.components.oracles.strategies.eipred" = ["DATA/**/*.pkl", "DATA/*.csv"]
+"pep_compass.optimization.components.oracles.strategies.mbc_attention" = ["model/**/*.pb", "model/variables/*"]
+"pep_compass.optimization.components.oracles.strategies.toxipep" = ["models/best_model_0.9.pth"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

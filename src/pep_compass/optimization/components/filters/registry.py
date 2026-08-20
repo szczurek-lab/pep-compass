@@ -22,29 +22,88 @@ from pep_compass.optimization.components.filters.ranked.scoring.model_scores.esm
 from pep_compass.optimization.components.filters.ranked.selection.nucleus import NucleusSelection
 from pep_compass.optimization.components.filters.ranked.selection.threshold import ThresholdSelection
 from pep_compass.optimization.components.filters.ranked.selection.top_k import TopKSelection
+from pep_compass.optimization.components.filters.ranked.registry import (
+    scoring_registry,
+    selection_registry,
+)
+from pep_compass.utils.strategy_factory import parameter_contract
+
+
+@scoring_registry.register("tandem", services={"autoencoder"})
+def build_tandem_score(
+    autoencoder, *, horizontal_threshold=0.1, maximum_candidates=30000, alphabet=None
+) -> TandemScore:
+    """Build TANDEM latent-geometry scoring."""
+    return TandemScore(autoencoder, horizontal_threshold, maximum_candidates, alphabet)
+
+
+@scoring_registry.register("lams", services={"autoencoder"})
+def build_lams_score(
+    autoencoder, *, horizontal_threshold=0.1, maximum_candidates=30000, alphabet=None
+) -> LamsScore:
+    """Build LAMS latent-geometry scoring."""
+    return LamsScore(autoencoder, horizontal_threshold, maximum_candidates, alphabet)
+
+
+@scoring_registry.register("move", services={"autoencoder"})
+def build_move_score(
+    autoencoder, *, maximum_candidates=30000, alphabet=None
+) -> MoveScore:
+    """Build MOVE latent-geometry scoring."""
+    return MoveScore(autoencoder, maximum_candidates, alphabet)
+
+
+@scoring_registry.register("decoder_likelihood", services={"autoencoder"})
+def build_decoder_likelihood_score(
+    autoencoder, *, maximum_candidates=30000, alphabet=None
+) -> DecoderLikelihoodScore:
+    """Build decoder-likelihood scoring."""
+    return DecoderLikelihoodScore(autoencoder, maximum_candidates, alphabet)
+
+
+@scoring_registry.register("esm")
+def build_esm_score(
+    *, model_name="esm2_t6_8M_UR50D", device="cpu"
+) -> ESM2PPLScorer:
+    """Build ESM pseudo-log-likelihood scoring."""
+    return ESM2PPLScorer(model_name=model_name, device=device)
+
+
+@selection_registry.register("threshold")
+def build_threshold_selection(*, threshold: float) -> ThresholdSelection:
+    """Build threshold score selection."""
+    return ThresholdSelection(threshold)
+
+
+@selection_registry.register("nucleus")
+def build_nucleus_selection(*, top_p=0.9, temperature=1.0) -> NucleusSelection:
+    """Build nucleus score selection."""
+    return NucleusSelection(top_p, temperature)
+
+
+@selection_registry.register("top_k")
+def build_top_k_selection(*, k: int) -> TopKSelection:
+    """Build top-k score selection."""
+    return TopKSelection(k)
 
 
 @FilterManager.register("ranked")
 def build_ranked(autoencoder, scoring, selection):
     """Build an explicit score-and-selection filter composition."""
-    scoring_method = scoring["method"]
-    scoring_parameters = scoring.get("parameters", {})
-    scoring_types = {"tandem": TandemScore, "lams": LamsScore, "move": MoveScore,
-                     "decoder_likelihood": DecoderLikelihoodScore, "esm": ESM2PPLScorer}
-    selection_method = selection["method"]
-    selection_parameters = selection.get("parameters", {})
-    selection_types = {"threshold": ThresholdSelection, "nucleus": NucleusSelection,
-                       "top_k": TopKSelection}
-    try:
-        scorer = scoring_types[scoring_method](autoencoder, **scoring_parameters)
-        rule = selection_types[selection_method](**selection_parameters)
-    except KeyError as error:
-        raise ValueError(f"Unknown ranked filter strategy: {error.args[0]}") from error
+    scorer = scoring_registry.build(
+        scoring["method"], scoring.get("parameters", {}),
+        services={"autoencoder": autoencoder},
+    )
+    rule = selection_registry.build(
+        selection["method"], selection.get("parameters", {}),
+    )
     return RankedFilter(scorer, rule)
 
 
 @FilterManager.register("esm_plausibility")
-def build_esm_plausibility(*, threshold=None, top_k=None, model_name="esm2_t6_8M_UR50D", device="cpu"):
+def build_esm_plausibility(
+    *, threshold=None, top_k=None, model_name="esm2_t6_8M_UR50D", device="cpu"
+):
     """Build ESM scoring with exactly one threshold or top-k rule."""
     if (threshold is None) == (top_k is None):
         raise ValueError("ESM filter requires exactly one of threshold or top_k.")
@@ -53,6 +112,7 @@ def build_esm_plausibility(*, threshold=None, top_k=None, model_name="esm2_t6_8M
 
 
 @FilterManager.register("lpbebo")
+@parameter_contract(accepted={"top_p", "temperature", "maximum_candidates", "alphabet"})
 def build_lpbebo(autoencoder, **parameters):
     """Build the LPBEBO mutation-choice filter."""
     top_p = parameters.pop("top_p", 0.9)
@@ -64,6 +124,9 @@ def build_lpbebo(autoencoder, **parameters):
 
 
 @FilterManager.register("lams")
+@parameter_contract(
+    accepted={"similarity_threshold", "horizontal_threshold", "maximum_candidates", "alphabet"}
+)
 def build_lams(autoencoder, **parameters):
     """Build the LAMS mutation-choice filter."""
     threshold = parameters.pop("similarity_threshold", 0.15)

@@ -20,6 +20,9 @@ sys.path.append(current_dir)
 
 from pep_compass.optimization.components.oracles.strategies.toxipep.atom_feature import convert_to_graph_channel
 from pep_compass.optimization.components.oracles.strategies.toxipep.model import ToxiPep_Model
+from pep_compass.optimization.components.oracles.model_registry import (
+    resolve_oracle_model,
+)
 
 # Peptide residue mapping - same as in original ToxiPep
 Pep_residue2idx = {
@@ -55,13 +58,19 @@ class PredictorToxiPep:
     - Lower values (closer to 0.0) indicate lower toxicity
     """
     
-    def __init__(self, device="cpu", model_path=None):
+    def __init__(
+        self,
+        device="cpu",
+        model="default",
+        models_directory=None,
+    ):
         """
         Initialize the ToxiPep predictor
         
         Args:
             device (str): Device for computation ("cpu" or "cuda")
-            model_path (str): Path to pre-trained model weights. If None, uses default path
+            model (str): Registered ToxiPep model variant.
+            models_directory (str, optional): Replacement strategy package root.
         """
         self.device = torch.device(device)
         
@@ -91,16 +100,16 @@ class PredictorToxiPep:
             structural_config=self.structural_config
         ).to(self.device)
         
-        # Load pre-trained weights
-        if model_path is None:
-            model_path = os.path.join(current_dir, "models", "best_model_0.9.pth")
-        
-        if os.path.exists(model_path):
-            self.model.load_state_dict(torch.load(model_path, map_location=self.device))
-            self.model.eval()
-            print(f"ToxiPep model loaded from: {model_path}")
-        else:
-            raise FileNotFoundError(f"Model weights not found at: {model_path}")
+        # Model resolution and loading
+        _, model_paths = resolve_oracle_model(
+            "toxipep",
+            model,
+            models_directory=models_directory,
+        )
+        model_path = model_paths[0]
+        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+        self.model.eval()
+        print(f"ToxiPep model loaded from: {model_path}")
     
     def transform_sequences_to_index(self, sequences):
         """Convert peptide sequences to index representation"""

@@ -5,9 +5,7 @@ deliberately deferred, and the currently known open issues. It condenses the
 implementation discussion that drove the `core`/`optimization`/`runtime`/
 `autoencoder`/`data`/`analysis` restructuring into decisions and current
 status — read [Technical Architecture](technical-architecture.md) for how
-the result actually works, and [`developer/przeniesienie
-modeli.md`](developer/przeniesienie%20modeli.md) for the file-by-file
-old→new mapping used during that migration.
+the result actually works.
 
 ## Package split rationale
 
@@ -23,10 +21,12 @@ runtime  ──►  core  ──►  optimization  ──►  data, autoencoder
 analysis ──► data (result_schema, dataset)   (never → runtime/core/optimization)
 ```
 
-- **`optimization`** is the engine and the science. It must run from plain
-  Python with a manually constructed `PepCompassPipeline` — no `core`, no
-  YAML, no CLI — so a component can be tested and used without the
-  configuration layer around it.
+- **`optimization`** is the core execution module. It defines all operators
+  used by the optimisation loop, including walkers, mutation generators,
+  filters, oracles and the execution graph. It runs from plain Python with a
+  manually constructed `PepCompassPipeline`, without `core`, YAML or the
+  CLI — so each operator can be tested and used independently of the
+  configuration layer.
 - **`core`** builds and validates only. `PipelineBuilder` turns a parsed
   `PipelineSpecification` plus an already-constructed autoencoder into a
   `PepCompassPipeline`. It does not read YAML, does not know about the CLI,
@@ -46,21 +46,26 @@ analysis ──► data (result_schema, dataset)   (never → runtime/core/optim
 
 ### `autoencoder`, not `models`
 
-A generic top-level `models` package was rejected: it re-creates the kind of
-undifferentiated bucket this restructuring was meant to remove. The package
-is named for what it concretely is — an autoencoder contract, its geometry
-operations, and its registered implementations — not a place for arbitrary
+A generic top-level `models` package was rejected: it would recreate the kind
+of undifferentiated bucket this restructuring was meant to remove. This does
+not prohibit model-specific directories containing checkpoint files, such as
+`autoencoder/strategies/hydramp/models/`. The top-level package is named for
+what it concretely provides, the autoencoder contract, its geometry
+operations and its registered implementations, rather than for arbitrary
 future model types.
 
 ### `method` vs `model`
 
-`autoencoder.method` selects the *implementation* (`hydramp`);
+`autoencoder.method` selects the *implementation* (`hydramp`), while
 `autoencoder.model` selects a *named checkpoint variant* of that
-implementation (`article_25`). This was a deliberate two-axis split so a
-future fine-tuned checkpoint (for example a locality-fine-tuned HydrAMP
-variant) can be added as a new registry entry under `model` without writing
-a new `method` strategy. See `autoencoder/registry.py`/`factory.py` and
-[Developer Guide](developer-guide.md#adding-an-autoencoder).
+implementation (`article_25`). The implementation factory is registered with
+`AutoencoderRegistry.register_method`; each checkpoint variant is registered
+with `AutoencoderRegistry.register_model` as a model descriptor. At build time,
+`AutoencoderFactory` resolves the descriptor, merges its parameters with
+explicit overrides, and invokes the selected method factory. This two-axis
+split means that a future fine-tuned checkpoint can be added as another model
+descriptor without writing a new method strategy. See
+`autoencoder/registry.py`/`factory.py` and [Developer Guide](developer-guide.md#adding-an-autoencoder).
 
 ### `core` builds; it does not run
 
@@ -99,83 +104,16 @@ implemented as `optimization/stability_estimation/`:
 See [Technical Architecture](technical-architecture.md#stability-estimation)
 for the implemented mechanism.
 
-## Deferred work
-
-These were discussed as follow-on improvements to the resource-control
-design above and are **explicitly not implemented** — documented here so
-they are not mistaken for silently dropped scope:
-
-- **Field-lifetime pruning**: dropping `CandidateBatch` fields once no later
-  step needs them (an explicit liveness analysis over declared
-  `requires`/`provides`/`retains` field sets), instead of every step
-  implicitly propagating every field it received.
-- **Candidate-viability selectors**: an explicit, configurable filter family
-  for dropping candidates that provably cannot improve the objective (trust-
-  region exit, Pareto dominance, stagnation), kept deliberately separate from
-  memory management — candidate removal is an algorithmic decision with
-  scientific consequences, not a housekeeping operation, and must never
-  happen implicitly.
-
 ## PoGS
 
 PoGS takes a different input shape than the composable pipeline and was
 therefore deliberately **not** inserted into the existing `Loop`/`Flow`
-graph. The agreed integration shape is a second, independent
+graph. 
+
+The agreed integration shape is a second, independent
 `RuntimeWorkflow` implementation (`runtime/workflows/base.py`'s
 `RuntimeWorkflow` protocol, the same contract `ComposableWorkflow`
 implements), selected the same way at the runtime boundary rather than
 branching inside the engine.
 
-**Current status**: `runtime/workflows/pogs.py` declares `PogsWorkflow` and
-unconditionally raises `NotImplementedError`; no `pep-compass` command
-selects it yet. See [User Guide](user-guide.md#pogs) for the placeholder and
-[Developer Guide](developer-guide.md#adding-a-workflow) for how to implement
-it.
-
-## Known issues (verified against the current tree)
-
-The pre-restructuring code review (`tmp/REVIEW.md`, since superseded by this
-document and deleted) flagged several items against an older package layout.
-Re-checked against the current tree:
-
-- **Resolved** — duplicate class-and-factory registration under the same
-  manager key (`sorbes`, `mutang`): the current
-  `walkers/strategies/__init__.py`/`mutation_generators/strategies/__init__.py`
-  each register exactly one factory per name.
-- **Resolved** — the old ablation walker's constructor mismatch: SORBES's
-  `position_update` sub-strategies (`main`/`article`/`without_acceleration`)
-  now share `MainPositionUpdate`'s constructor with no signature drift.
-- **Resolved** — empty filter subpackages (`biology/`, `constraints/`,
-  `latent_geometry/`, `sequence_geometry/` with no implementation): the
-  `filters/direct/{constraints,controls,optimization,structural}/` and
-  `filters/ranked/{scoring,selection}/` split is populated and is the
-  current, intentional structure (see
-  [Developer Guide](developer-guide.md#adding-a-filter)).
-- **Resolved** — `oracles/strategies/README.md` claiming EIPred and
-  MBC-Attention were not yet wired in: both are registered
-  (`oracles/strategies/__init__.py`).
-- **Still open** — `Parallel` merge policies `interleave`, `select_best` and
-  `weighted_sample` are declared (`MergeMethod` literal) but raise
-  `NotImplementedError` (`optimization/engine/operations/parallel/merge.py`).
-- **Downgraded, not fully resolved** — the `field_eps` inconsistency:
-  `Autoencoder.field_derivative` now consistently uses `self.field_eps`
-  (the original bug there is fixed), but
-  `Autoencoder.get_ambient_covariant_derivative` still takes an independent
-  local `eps: float = 0.1` parameter unrelated to `field_eps`. It currently
-  has **no callers** anywhere in the codebase, so this is dead code rather
-  than an active bug — reconcile the `eps` parameter with `field_eps` before
-  the method is used.
-- **New, found during this pass** — `MainBoundary.__call__`
-  (`walkers/strategies/sorbes/boundary/main.py`) contains an explicit
-  `REMARK`/`TODO`: it provides no computable `W_kappa` boundary projection;
-  an "article" boundary variant is pending on `W_kappa` being fully
-  specified. `position_update/article.py` similarly has an open TODO
-  confirming whether its Gamma term equals the acceleration term used by
-  `main`. Both are open scientific questions for the walker's author, not
-  implementation bugs.
-- Everything else in the superseded review (old-path bug locations, a
-  duplicated-`materialize_variants`-call performance note in a
-  `composable.py` that no longer exists under that name, an unconfirmed
-  `should_start_tracking` heuristic) referenced files or structures that no
-  longer exist under the current package layout and were not re-verified;
-  they are not carried forward as current facts.
+**Current status**: - not implemented #TODO PoGS idea 

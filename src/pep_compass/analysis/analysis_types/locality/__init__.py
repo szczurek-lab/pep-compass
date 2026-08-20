@@ -1,4 +1,4 @@
-"""Locality analyses grouped into SORBES, latent, MUTANG, and parameter modules."""
+"""Maintained locality analyses for SORBES and MUTANG experiments."""
 
 from pep_compass.analysis.analysis_types.locality.analysis import (
     LocalityAnalysis,

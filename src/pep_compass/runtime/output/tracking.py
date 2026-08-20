@@ -8,13 +8,15 @@ knowledge of CSV files or retention settings.
 from __future__ import annotations
 
 import csv
+from dataclasses import dataclass
 import hashlib
 import json
 from pathlib import Path
 from threading import Lock
 from time import perf_counter
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
+import numpy as np
 import torch
 
 from pep_compass.optimization.tracking import ExecutionScope, StepTracker, TrackingLevel
@@ -25,12 +27,29 @@ if TYPE_CHECKING:
     from pep_compass.optimization.engine.execution.step import Step
 
 
+CandidateSnapshots = Literal["none", "oracle", "all"]
+
+
+@dataclass(frozen=True, slots=True)
+class _TrackingHandle:
+    """Internal lifecycle state for one tracked step execution."""
+
+    execution_id: int
+    started_at: float
+    oracle_calls: int
+    generated_candidates: int
+    input_count: int
+    checkpoint_file: str | None = None
+
+
 class CSVStepTracker(StepTracker):
     """Stream depth-aware optimization records to normalized CSV files.
 
-    ``short`` writes oracle summaries and candidates. ``normal`` writes scalar
-    summaries for every enabled step and candidates for oracles. ``all`` also
-    writes candidates for every enabled step. ``store_latents`` and
+    ``short`` writes oracle summaries. ``normal`` and ``all`` write scalar
+    summaries for every enabled step. ``candidate_snapshots`` independently
+    controls candidate-row retention; checkpoints required for replay are
+    always streamed for local enumeration and SORBES points in normal/all.
+    ``store_latents`` and
     ``store_fields`` control columns within candidate rows; ``field_names``
     restricts serialized fields further.
 
@@ -49,16 +68,20 @@ class CSVStepTracker(StepTracker):
         store_latents: bool = False,
         store_fields: bool = False,
         field_names: list[str] | tuple[str, ...] | None = None,
+        candidate_snapshots: CandidateSnapshots = "none",
         run_id: str | None = None,
         variant_id: str | None = None,
     ) -> None:
         if level not in {"short", "normal", "all"}:
             raise ValueError("Tracking level must be short, normal, or all.")
+        if candidate_snapshots not in {"none", "oracle", "all"}:
+            raise ValueError("Candidate snapshots must be none, oracle, or all.")
         self.level = level
         self.max_depth = max_depth
         self.store_latents = store_latents
         self.store_fields = store_fields
         self.field_names = frozenset(field_names) if field_names is not None else None
+        self.candidate_snapshots = candidate_snapshots
         self.run_id = run_id
         self.variant_id = variant_id
         self.output_directory = Path(output_directory)
@@ -77,8 +100,12 @@ class CSVStepTracker(StepTracker):
         self._local_enumeration_stream = (
             self.output_directory / "local_enumerations.csv"
         ).open("w", newline="", encoding="utf-8")
-        self._trajectory_latents: list[torch.Tensor] = []
-        self._local_input_latents: list[torch.Tensor] = []
+        self._checkpoint_directory = self.output_directory / "checkpoints"
+        self._trajectory_checkpoint_directory = self._checkpoint_directory / "trajectory"
+        self._local_checkpoint_directory = self._checkpoint_directory / "local_enumeration"
+        self._trajectory_checkpoint_directory.mkdir(parents=True, exist_ok=True)
+        self._local_checkpoint_directory.mkdir(parents=True, exist_ok=True)
+        self._next_trajectory_latent_index = 0
         self._step_writer = csv.DictWriter(
             self._step_stream,
             fieldnames=(
@@ -126,6 +153,10 @@ class CSVStepTracker(StepTracker):
                 "point_id",
                 "sequence",
                 "latent_index",
+                "checkpoint_file",
+                "checkpoint_index",
+                "candidate_id",
+                "parent_candidate_id",
                 "adjusted_time_step",
             ),
         )
@@ -137,9 +168,7 @@ class CSVStepTracker(StepTracker):
                 "variant_id",
                 "loop_indices",
                 "input_count",
-                "input_latent_start",
-                "input_latent_count",
-                "input_sequences",
+                "checkpoint_file",
                 "output_count",
                 "output_sequences_sha256",
             ),
@@ -155,15 +184,22 @@ class CSVStepTracker(StepTracker):
         batch: "CandidateBatch",
         scope: ExecutionScope,
         context: "OptimizationContext",
-    ) -> tuple[int, float, int, int]:
+    ) -> _TrackingHandle:
         with self._lock:
             execution_id = self._next_execution_id
             self._next_execution_id += 1
-        return (
-            execution_id,
-            perf_counter(),
-            context.state.oracle_calls,
-            context.state.generated_candidates,
+        checkpoint_file = None
+        if self.level in {"normal", "all"} and step.name == "LocalEnumeration":
+            checkpoint_file = self._write_local_enumeration_checkpoint(
+                execution_id, batch, context
+            )
+        return _TrackingHandle(
+            execution_id=execution_id,
+            started_at=perf_counter(),
+            oracle_calls=context.state.oracle_calls,
+            generated_candidates=context.state.generated_candidates,
+            input_count=len(batch),
+            checkpoint_file=checkpoint_file,
         )
 
     def end_step(
@@ -181,7 +217,7 @@ class CSVStepTracker(StepTracker):
         if self.level == "short" and not is_oracle:
             return
         step_row = {
-            "execution_id": handle[0],
+            "execution_id": handle.execution_id,
             "run_id": self.run_id,
             "variant_id": self.variant_id,
             "step_name": step.name,
@@ -193,26 +229,28 @@ class CSVStepTracker(StepTracker):
             "input_size": len(input_batch),
             "output_size": len(output_batch),
             "status": "completed",
-            "duration_seconds": perf_counter() - handle[1],
-            "oracle_calls_before": handle[2],
+            "duration_seconds": perf_counter() - handle.started_at,
+            "oracle_calls_before": handle.oracle_calls,
             "oracle_calls_after": context.state.oracle_calls,
-            "generated_candidates_before": handle[3],
+            "generated_candidates_before": handle.generated_candidates,
             "generated_candidates_after": context.state.generated_candidates,
             "error": "",
         }
         candidate_rows = []
-        if self.level == "all" or is_oracle:
-            candidate_rows = self._candidate_rows(handle[0], output_batch)
+        if self.candidate_snapshots == "all" or (
+            self.candidate_snapshots == "oracle" and is_oracle
+        ):
+            candidate_rows = self._candidate_rows(handle.execution_id, output_batch)
         with self._lock:
             trajectory_rows = (
-                self._trajectory_rows(handle[0], output_batch, scope)
+                self._trajectory_rows(handle.execution_id, output_batch, scope)
                 if self.level in {"normal", "all"}
                 and step.name == "SorbesWalker"
                 else []
             )
             local_enumeration_row = (
                 self._local_enumeration_row(
-                    handle[0], input_batch, output_batch, scope
+                    handle, output_batch, scope
                 )
                 if self.level in {"normal", "all"}
                 and step.name == "LocalEnumeration"
@@ -230,7 +268,7 @@ class CSVStepTracker(StepTracker):
 
     def fail_step(self, handle, step, input_batch, scope, context, error):
         row = {
-            "execution_id": handle[0],
+            "execution_id": handle.execution_id,
             "run_id": self.run_id,
             "variant_id": self.variant_id,
             "step_name": step.name,
@@ -242,10 +280,10 @@ class CSVStepTracker(StepTracker):
             "input_size": len(input_batch),
             "output_size": 0,
             "status": "failed",
-            "duration_seconds": perf_counter() - handle[1],
-            "oracle_calls_before": handle[2],
+            "duration_seconds": perf_counter() - handle.started_at,
+            "oracle_calls_before": handle.oracle_calls,
             "oracle_calls_after": context.state.oracle_calls,
-            "generated_candidates_before": handle[3],
+            "generated_candidates_before": handle.generated_candidates,
             "generated_candidates_after": context.state.generated_candidates,
             "error": f"{type(error).__name__}: {error}",
         }
@@ -323,8 +361,17 @@ class CSVStepTracker(StepTracker):
         tensors = {name: batch.fields.get(name) for name in tensor_names}
         if not isinstance(objects["tracking.trajectory_id"], ObjectField):
             return []
-        latent_start = len(self._trajectory_latents)
-        self._trajectory_latents.extend(batch.latent_origins.detach().cpu().unbind(0))
+        checkpoint_path = (
+            self._trajectory_checkpoint_directory / f"{execution_id:08d}.pt"
+        )
+        torch.save(
+            batch.latent_origins.detach().to(device="cpu", dtype=torch.float32),
+            checkpoint_path,
+        )
+        latent_start = self._next_trajectory_latent_index
+        self._next_trajectory_latent_index += len(batch)
+        candidate_ids = batch.fields.get("lineage.candidate_id")
+        parent_ids = batch.fields.get("lineage.parent_candidate_id")
         rows = []
         for index, sequence in enumerate(batch.sequences):
             rows.append(
@@ -350,6 +397,12 @@ class CSVStepTracker(StepTracker):
                     ),
                     "sequence": sequence,
                     "latent_index": latent_start + index,
+                    "checkpoint_file": str(
+                        checkpoint_path.relative_to(self.output_directory)
+                    ),
+                    "checkpoint_index": index,
+                    "candidate_id": self._tensor_scalar(candidate_ids, index),
+                    "parent_candidate_id": self._tensor_scalar(parent_ids, index),
                     "adjusted_time_step": self._tensor_scalar(
                         tensors["walker.adjusted_time_step"], index
                     ),
@@ -359,33 +412,72 @@ class CSVStepTracker(StepTracker):
 
     def _local_enumeration_row(
         self,
-        execution_id: int,
-        input_batch: "CandidateBatch",
+        handle: _TrackingHandle,
         output_batch: "CandidateBatch",
         scope: ExecutionScope,
     ) -> dict[str, Any]:
-        """Checkpoint one local-enumeration boundary without retaining its batch."""
-        latent_start = len(self._local_input_latents)
-        self._local_input_latents.extend(
-            input_batch.latent_origins.detach().cpu().unbind(0)
-        )
+        """Write one local-enumeration result digest linked to its input shard."""
         payload = json.dumps(
             list(output_batch.sequences),
             ensure_ascii=True,
             separators=(",", ":"),
         ).encode("utf-8")
         return {
-            "execution_id": execution_id,
+            "execution_id": handle.execution_id,
             "run_id": self.run_id,
             "variant_id": self.variant_id,
             "loop_indices": json.dumps(scope.loop_indices),
-            "input_count": len(input_batch),
-            "input_latent_start": latent_start,
-            "input_latent_count": len(input_batch),
-            "input_sequences": json.dumps(input_batch.sequences),
+            "input_count": handle.input_count,
+            "checkpoint_file": handle.checkpoint_file or "",
             "output_count": len(output_batch),
             "output_sequences_sha256": hashlib.sha256(payload).hexdigest(),
         }
+
+    def _write_local_enumeration_checkpoint(
+        self,
+        execution_id: int,
+        batch: "CandidateBatch",
+        context: "OptimizationContext",
+    ) -> str:
+        """Persist an isolated replay boundary before local enumeration.
+
+        :param execution_id: Lifecycle execution identity of LocalEnumeration.
+        :param batch: Input candidates at the boundary.
+        :param context: Current deterministic execution context.
+        :return: Path relative to the tracking directory parent.
+
+        REMARK: Saving the RNG state is essential for resuming from this boundary;
+        the global run seed alone only reproduces execution from the beginning.
+        """
+        from pep_compass.data.optimization import TensorField
+
+        candidate_ids = batch.fields.get("lineage.candidate_id")
+        parent_ids = batch.fields.get("lineage.parent_candidate_id")
+        path = self._local_checkpoint_directory / f"{execution_id:08d}.pt"
+        payload: dict[str, Any] = {
+            "sequences": tuple(batch.sequences),
+            "latent_origins": batch.latent_origins.detach().to(
+                device="cpu", dtype=torch.float32
+            ),
+            "candidate_ids": (
+                candidate_ids.values.detach().to(device="cpu", dtype=torch.long)
+                if isinstance(candidate_ids, TensorField)
+                else torch.full((len(batch),), -1, dtype=torch.long)
+            ),
+            "parent_candidate_ids": (
+                parent_ids.values.detach().to(device="cpu", dtype=torch.long)
+                if isinstance(parent_ids, TensorField)
+                else torch.full((len(batch),), -1, dtype=torch.long)
+            ),
+            "seed": context.seed,
+            "numpy_rng_state": context.rng.bit_generator.state,
+            "numpy_global_rng_state": np.random.get_state(),
+            "torch_cpu_rng_state": torch.get_rng_state(),
+        }
+        if torch.cuda.is_available():
+            payload["torch_cuda_rng_states"] = torch.cuda.get_rng_state_all()
+        torch.save(payload, path)
+        return str(path.relative_to(self.output_directory))
 
     @staticmethod
     def _tensor_scalar(field: Any, index: int) -> int | float | str:
@@ -402,24 +494,6 @@ class CSVStepTracker(StepTracker):
             self._candidate_stream.flush()
             self._trajectory_stream.flush()
             self._local_enumeration_stream.flush()
-            trajectory_latents = (
-                torch.stack(self._trajectory_latents)
-                if self._trajectory_latents
-                else torch.empty((0, 0))
-            )
-            local_input_latents = (
-                torch.stack(self._local_input_latents)
-                if self._local_input_latents
-                else torch.empty((0, 0))
-            )
-            torch.save(
-                trajectory_latents,
-                self.output_directory / "trajectory_latents.pt",
-            )
-            torch.save(
-                local_input_latents,
-                self.output_directory / "local_enumeration_inputs.pt",
-            )
             self._step_stream.close()
             self._candidate_stream.close()
             self._trajectory_stream.close()

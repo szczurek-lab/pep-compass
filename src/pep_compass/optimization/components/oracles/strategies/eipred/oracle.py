@@ -14,7 +14,8 @@ class EIPredBlackBox(AbstractBlackBox):
         num_workers: int = None,
         evaluation_budget: int = float("inf"),
         force_isolation: bool = False,
-        model_path: str = None,
+        model: str = "default",
+        models_directory: str | None = None,
     ):
         super().__init__(
             batch_size=batch_size,
@@ -24,9 +25,14 @@ class EIPredBlackBox(AbstractBlackBox):
             force_isolation=force_isolation,
         )
 
-        # Use EIPredPredictor with APEX-compatible interface
-        # Note: model_path is not used by EIPredPredictor (it uses default paths)
-        self.predictor = EIPredPredictor(device='cpu', batch_size=batch_size or 1000)
+        # Model-backed predictor
+        ## Resolve both classifier weights and the selected-feature schema
+        self.predictor = EIPredPredictor(
+            device="cpu",
+            batch_size=batch_size or 1000,
+            model=model,
+            models_directory=models_directory,
+        )
 
         if mic_aggregate == "max":
             mic_aggregate_func = lambda x: np.max(x, axis=1)

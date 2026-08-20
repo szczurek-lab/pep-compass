@@ -38,7 +38,7 @@ optimisation pipeline.
 
 PepCompass isolates *construction* (validating configuration and wiring
 components into an executable graph) from the *components* themselves
-(walkers, mutation generators, filters, oracles — interchangeable strategy
+(walkers, mutation generators, filters, oracles, interchangeable strategy
 families behind abstract contracts) and from *running experiments*
 (planning, backends, persistence). This lets the same components be combined
 into different pipelines, and lets the pipeline itself be built and run from
@@ -63,15 +63,14 @@ Jacobian (`field_derivative`, tangent-space decomposition consumed by SORBES
 and MUTANG). `AutoencoderFactory.build(method, model, device, **parameters)`
 separates the *implementation* (`method`, e.g. `hydramp`) from the *named
 checkpoint* (`model`, e.g. `article_25`) — see
-[Architecture Decisions](architecture-decisions.md#autoencoder-vs-models).
+[Architecture Decisions](architecture-decisions.md#autoencoder-not-models).
 
 ### Data
 
-`pep_compass.data` holds shared, dependency-free types used across the
-runtime: `optimization.py` (`CandidateBatch` and batch fields, used during
-execution), `result_schema.py` (the versioned on-disk result format) and
-`dataset.py` (the logical, lazy view of loaded results consumed by
-`analysis`).
+`pep_compass.data` holds shared data types used across the runtime:
+`optimization.py` (`CandidateBatch` and batch fields, used during execution),
+`result_schema.py` (the versioned on-disk result format) and `dataset.py` (the
+logical, lazy view of loaded results consumed by `analysis`).
 
 ### Optimisation Engine
 
@@ -123,11 +122,16 @@ load_runtime_configuration ──► validate_runtime_configuration
 materialize_execution_plan ──► input tasks × grid variants → flat ExecutionPlan
        │
        ▼
-RuntimeWorkflow.build_pipeline ──► parse_pipeline_specification ──► PipelineBuilder.build
-       │                                                                    │
-       │                                                                    ▼
-       │                                                     validate_pipeline_specification
-       │                                                     validate_registered_components
+RuntimeWorkflow.build_pipeline
+       │
+       ├── parse_pipeline_specification
+       │
+       └── PipelineBuilder.build
+             ├── validate_pipeline_specification
+             ├── validate_registered_components
+             ├── construct the Step tree
+             └── configure limits and stability estimation
+       │
        ▼
 PepCompassPipeline.run(sequences, seed=...) ──► OptimizationResult
        │
@@ -140,8 +144,11 @@ implemented `RuntimeWorkflow` today: it builds one autoencoder once, wraps a
 `PipelineBuilder`, and parses+builds a fresh pipeline per plan entry. `dry-run`
 runs configuration and component validation plus static estimation without
 constructing an autoencoder or executing anything. `test-run` builds and
-executes a real pipeline with numeric limits lowered in place
-(`runtime/test_run.py`) and result persistence disabled.
+executes a real pipeline from a copied configuration with numeric limits
+lowered (`runtime/test_run.py`) and result persistence disabled. It also
+reduces local-enumeration trajectories to one and removes a time-based
+`walk_time` bound when present, because the test policy caps fixed iteration
+counts instead.
 
 ## Pipeline Elements
 
@@ -229,6 +236,9 @@ configuration order and merged by branch index. `ConcatenateMerger` is the
 only implemented policy; `interleave`, `select_best` and `weighted_sample`
 are declared (`MergeMethod` literal) but raise `NotImplementedError` (see
 [Architecture Decisions](architecture-decisions.md#known-issues)).
+Both execution modes share one `OptimizationState`; concurrent branches can
+therefore update counters, observations and trust regions concurrently and
+are not transactionally isolated.
 
 ### Local Enumeration
 
@@ -252,18 +262,19 @@ placed *after* `LocalEnumeration`, not inside it.
 
 Termination is exactly one of `iterations` (fixed step count) or `walk_time`
 (accumulated adjusted SORBES time per trajectory). `trajectory_execution:
-batched` (default) advances every active trajectory for one seed as one
-batched tensor call with an isolated forked RNG stream per seed
-(`torch.random.fork_rng`), removing finished trajectories from the batch
-under a `walk_time` bound; `trajectory_execution: sequential` runs one
+batched` (default) advances active trajectories as one batched tensor call
+inside an isolated forked Torch RNG stream (`torch.random.fork_rng`), removing
+finished trajectories from the batch under a `walk_time` bound;
+`trajectory_execution: sequential` runs one
 trajectory at a time as a correctness reference and per-trajectory tracking
 identity.
 
-`local_enumerations.csv` (see [Tracking](#tracking)) checkpoints each
-execution's exact input sequences/latents and the output count plus a
-SHA-256 digest of the output sequences — not the full output list, to keep
-tracking tables small. `analysis.reader.RunReplay.local_enumeration_input`
-and `.verify_local_enumeration` (see [Analysis Guide](analysis-guide.md))
+`local_enumerations.csv` (see [Tracking](#tracking)) records each execution's
+input checkpoint path, input count, output count and a SHA-256 digest of the
+output sequences. The checkpoint shard stores the exact input sequences,
+latents, lineage identifiers and RNG states; the output list is not duplicated
+in the CSV table. `analysis.reader.RunReplay.local_enumeration_input` and
+`.verify_local_enumeration` (see [Analysis Guide](analysis-guide.md))
 reconstruct and verify one execution's output against that digest.
 
 ## Runtime Implementation Notes
@@ -294,8 +305,8 @@ Two independent, complementary mechanisms live in
 `optimization/stability_estimation/`:
 
 - **Static estimation** (`estimation.py`, driven by `core.estimation` during
-  `dry-run`): computes upper/expected candidate-count and byte-size bounds
-  per graph node from declared cardinality behaviour, without executing
+  `dry-run`): computes conservative upper candidate-count and latent-memory
+  bounds per graph node from declared cardinality behaviour, without executing
   anything. A node whose output depends on data (e.g. a data-dependent
   filter pass-through rate) is reported as an explicit unknown rather than a
   guessed number.
@@ -319,26 +330,31 @@ this mechanism but are **not implemented** — see
 
 - `steps.csv` — every tracked step's timing, candidate-count and
   oracle-call deltas, tree depth, path, and nested loop/branch indices.
-- `candidates.csv` — per-step candidate rows, written when `tracking.level
-  == "all"` or the step is an oracle.
-- `trajectory_points.csv` + `trajectory_latents.pt` — SORBES walker
-  checkpoints (written for `SorbesWalker` steps at `level` `normal`/`all`).
-- `local_enumerations.csv` + `local_enumeration_inputs.pt` — `LocalEnumeration`
-  boundary checkpoints (see [Local Enumeration](#local-enumeration)).
+- `candidates.csv` — per-step candidate rows, written according to
+  `tracking.candidate_snapshots`: `none`, `oracle`, or `all`.
+- `trajectory_points.csv` + `checkpoints/trajectory/*.pt` — SORBES walker
+  metadata and latent checkpoint shards (written for `SorbesWalker` steps at
+  `level` `normal`/`all`).
+- `local_enumerations.csv` + `checkpoints/local_enumeration/*.pt` —
+  `LocalEnumeration` boundary metadata and input/RNG checkpoint shards (see
+  [Local Enumeration](#local-enumeration)).
+- `run.log` — run-scoped package log written by `RuntimeRunner`.
 - `replay_manifest.json` — schema version, run/variant id, resolved seed,
   SHA-256 of the resolved configuration, Python/Torch/CUDA versions,
   determinism flag, and git revision/dirty state — enough to judge whether a
   later reconstruction attempt ran under matching conditions.
 
-`ExecutionScope` (`optimization/tracking.py`) carries the hierarchical path,
+`ExecutionScope` (`optimization/tracking/core.py`) carries the hierarchical path,
 nested loop indices, and parallel branch names/indices; entering a step,
 iteration, or branch returns a new immutable scope, so tracking identifies
 the complete branch hierarchy without adding fields to candidate batches.
-`tracking.level` (`short`/`normal`/`all`) and `max_depth` bound what is
-written without changing which steps execute; `store_latents`/`store_fields`
-add optional columns. Serialising SORBES tangent-space matrices for every
-candidate can dominate output size — enable `store_fields` only when those
-values are actually needed for analysis.
+`tracking.level` (`short`/`normal`/`all`) and `max_depth` bound which step
+summaries and replay checkpoints are written without changing which steps
+execute. `candidate_snapshots` independently controls candidate-row retention;
+`store_latents`/`store_fields` control the optional columns in retained rows,
+and `field_names` can restrict serialized fields. Serialising SORBES
+tangent-space matrices for every retained candidate can dominate output size —
+enable `store_fields` only when those values are needed for analysis.
 
 See [User Guide](user-guide.md#output-files) for the complete per-run
 directory layout, and the [Analysis Guide](analysis-guide.md) for reading

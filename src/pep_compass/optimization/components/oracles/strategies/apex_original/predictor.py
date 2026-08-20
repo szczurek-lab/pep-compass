@@ -9,6 +9,9 @@ import torch
 from tqdm import tqdm
 
 from pep_compass.optimization.components.oracles.strategies.apex_original.utils import make_vocab, onehot_encoding
+from pep_compass.optimization.components.oracles.model_registry import (
+    resolve_oracle_model,
+)
 from pep_compass.utils.logger import get_custom_logger
 
 logger = get_custom_logger(__name__)
@@ -146,33 +149,13 @@ class PredictorAPEX:
         self.word2idx, self.idx2word = make_vocab()  # make amino acid vocabulary
         # emb, AAindex_dict = AAindex('./aaindex1.csv', word2idx) #make amino acid embeddings
 
-        # Load pretrained APEX models
-        # Use custom pickle module to handle old module name references
-        models_root = (
-            Path(models_directory)
-            if models_directory is not None
-            else Path(__file__).resolve().parents[1] / "apex" / "models"
+        # Model resolution
+        ## Preserve the historical loader while sharing artifact validation
+        _, model_paths = resolve_oracle_model(
+            "apex_original",
+            model,
+            models_directory=models_directory,
         )
-        models_dir = models_root / variant.directory
-        if not models_dir.exists():
-            raise FileNotFoundError(
-                f"APEX model directory not found: {models_dir}. Run "
-                f"{variant.download_script} to install the '{model}' model weights."
-            )
-
-        model_paths = tuple(sorted(models_dir.glob(variant.glob_pattern)))
-        if not model_paths:
-            raise FileNotFoundError(
-                f"No APEX weight files matching '{variant.glob_pattern}' found under "
-                f"{models_dir}. Run {variant.download_script} to install them."
-            )
-        if variant.expected_models is not None and len(model_paths) != variant.expected_models:
-            raise FileNotFoundError(
-                f"Incomplete APEX '{model}' ensemble under {models_dir}: expected "
-                f"{variant.expected_models} weight files matching "
-                f"'{variant.glob_pattern}', found {len(model_paths)}. Run "
-                f"{variant.download_script} to reinstall the ensemble."
-            )
 
         started_at = perf_counter()
         self.APEX_models = []

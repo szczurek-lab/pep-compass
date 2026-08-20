@@ -5,6 +5,7 @@ from __future__ import annotations
 from pep_compass.runtime.configuration.schema import RuntimeConfiguration
 from pep_compass.autoencoder.registry import AutoencoderRegistry
 from pep_compass.utils.strategy_factory import validate_factory_parameters
+from pep_compass.registry import load_builtin_registrations
 
 
 def validate_runtime_configuration(configuration: RuntimeConfiguration) -> None:
@@ -26,6 +27,10 @@ def validate_runtime_configuration(configuration: RuntimeConfiguration) -> None:
         raise ValueError("execution.max_workers must be a positive integer.")
     if configuration.tracking.level not in {"short", "normal", "all"}:
         raise ValueError("tracking.level must be short, normal, or all.")
+    if configuration.tracking.candidate_snapshots not in {"none", "oracle", "all"}:
+        raise ValueError(
+            "tracking.candidate_snapshots must be none, oracle, or all."
+        )
     if not configuration.autoencoder.method:
         raise ValueError("autoencoder.method cannot be empty.")
     if not configuration.autoencoder.model:
@@ -35,7 +40,7 @@ def validate_runtime_configuration(configuration: RuntimeConfiguration) -> None:
 
 def _validate_autoencoder(configuration: RuntimeConfiguration) -> None:
     """Validate autoencoder method, named model and factory parameters."""
-    import pep_compass.autoencoder.strategies  # noqa: F401
+    load_builtin_registrations()
 
     autoencoder = configuration.autoencoder
     descriptor = AutoencoderRegistry.model(autoencoder.method, autoencoder.model)

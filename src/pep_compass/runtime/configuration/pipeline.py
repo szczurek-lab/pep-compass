@@ -16,12 +16,14 @@ from pep_compass.core.specification import (
     StepSpecification,
 )
 from pep_compass.optimization.engine.execution.state import OptimizationLimits
+from pep_compass.registry import component_catalog, load_builtin_registrations
 
 
 def parse_pipeline_specification(
     configuration: Mapping[str, Any],
 ) -> PipelineSpecification:
     """Parse a runtime pipeline mapping into a neutral core specification."""
+    load_builtin_registrations()
     limits = _mapping(configuration.get("limits", {}), "pipeline.limits")
     steps = _sequence(configuration.get("steps"), "pipeline.steps")
     return PipelineSpecification(
@@ -53,7 +55,7 @@ def _parse_step(configuration: Any, path: str) -> StepSpecification:
         raise ValueError(f"{path} must contain exactly one operation key.")
     operation, raw_settings = next(iter(mapping.items()))
     settings = _mapping(raw_settings, f"{path}.{operation}")
-    if operation in {"walker", "mutation_generator", "filter", "oracle"}:
+    if operation in component_catalog.names():
         method = settings.get("method")
         if not isinstance(method, str) or not method:
             raise ValueError(f"{path}.{operation}.method cannot be empty.")

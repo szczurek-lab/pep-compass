@@ -14,6 +14,9 @@ sys.path.append(os.path.join(current_dir, 'tools'))
 
 from tools.MultiBranchCNN import CNNimportFtsDataSetsPoNe, CNNstandardInputOutput
 from config import def_fts, def_bias, def_scale
+from pep_compass.optimization.components.oracles.model_registry import (
+    resolve_oracle_model,
+)
 
 
 class PredictorMBCAttention:
@@ -22,7 +25,13 @@ class PredictorMBCAttention:
     Predicts antimicrobial activity (MIC values) for peptide sequences using Multi-Branch CNN.
     """
 
-    def __init__(self, device="cpu", batch_size=3000, path="default"):
+    def __init__(
+        self,
+        device="cpu",
+        batch_size=3000,
+        model="default",
+        models_directory=None,
+    ):
         """
         Initialize the MBC Attention predictor.
         
@@ -30,21 +39,21 @@ class PredictorMBCAttention:
             device (str): Device to use for computation ("cpu" or "cuda"). 
                          Note: TensorFlow will handle GPU allocation automatically.
             batch_size (int): Batch size for processing sequences.
-            path (str): Path configuration - currently only "default" supported.
+            model (str): Registered MBC-Attention model variant.
+            models_directory (str, optional): Replacement strategy package root.
         """
         self.device = device
         self.batch_size = batch_size
-        self.path = path
-        
-        if path != "default":
-            raise ValueError("Path option not recognized. Currently only 'default' is supported.")
-            
-        # Load the pre-trained MBC Attention model
-        self.file_dir = os.path.dirname(os.path.abspath(__file__))
-        model_path = os.path.join(self.file_dir, "model")
-        
-        if not os.path.exists(model_path):
-            raise FileNotFoundError(f"MBC Attention model not found at {model_path}")
+        self.model_name = model
+
+        # Model resolution
+        ## Validate the SavedModel structure before TensorFlow initialization
+        _, model_paths = resolve_oracle_model(
+            "mbc_attention",
+            model,
+            models_directory=models_directory,
+        )
+        model_path = model_paths[0]
             
         # Configure TensorFlow to use GPU if available and requested
         if device == "cuda":

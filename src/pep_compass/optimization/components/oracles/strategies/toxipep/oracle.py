@@ -39,7 +39,9 @@ class ToxiPepBlackBox(AbstractBlackBox):
         parallelize: bool = False,
         num_workers: Optional[int] = None,
         evaluation_budget: int = float("inf"),
-        force_isolation: bool = False
+        force_isolation: bool = False,
+        model: str = "default",
+        models_directory: str | None = None,
     ):
         """
         Initialize the ToxiPep Black Box
@@ -61,7 +63,11 @@ class ToxiPepBlackBox(AbstractBlackBox):
         )
         
         # Initialize the ToxiPep predictor
-        self.toxipep_predictor = PredictorToxiPep(device=device)
+        self.toxipep_predictor = PredictorToxiPep(
+            device=device,
+            model=model,
+            models_directory=models_directory,
+        )
         
         # Define the peptide scoring function
         # Returns NEGATIVE toxicity probabilities for minimization (lower toxicity = higher score)

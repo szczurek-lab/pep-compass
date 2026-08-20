@@ -40,7 +40,7 @@ documented in [Architecture Decisions](architecture-decisions.md).
     - [Contract Tests](#contract-tests)
     - [Registry Tests](#registry-tests)
     - [Validation Configurations](#validation-configurations)
-  - [Extension Checklist](#extension-checklist)
+  - [Extension Checklist (for LLMs)](#extension-checklist-for-llms)
 
 ## Library Structure
 
@@ -94,8 +94,12 @@ src/pep_compass/
     reader/                 ExperimentReader, ExperimentSelection, RunReplay, MetricsStore
     analysis_types/locality/
     resampling/ visualization/
+  registry/
+    core.py                 Registry: names, factories, services and parameter contracts
+    components.py           component-family catalog used by PipelineBuilder
+    bootstrap.py            one-time built-in registration loading
   utils/
-    strategy_factory.py     register/build/parameter_contract helpers shared by every manager
+    strategy_factory.py     parameter-contract compatibility helpers
 ```
 
 Configurations belong under `assets/experiments/configs/`, with
@@ -198,8 +202,9 @@ one or more **named model variants** (checkpoint descriptors) rather than
 hard-coding a single checkpoint — `method` selects the implementation,
 `model` selects the variant (see
 [Architecture Decisions](architecture-decisions.md#autoencoder-vs-models)).
-`core.PipelineBuilder` owns the constructed instance and injects it as the
-`autoencoder` service into any factory that declares it.
+`AutoencoderFactory` constructs the instance; `PipelineBuilder` receives it
+and makes it available as the `autoencoder` service to component factories
+whose registrations declare that service.
 
 ### Adding a Walker
 
@@ -279,8 +284,9 @@ established adapter pattern). An oracle must:
 
 Import model-specific dependencies lazily inside the registered factory (see
 `_black_box_oracle`'s `import_module`) so an unused oracle's dependency does
-not prevent library import. Oracles do not use `build_with_services` — a
-factory receives only its declared `**parameters`, no injected services.
+not prevent library import. `OracleManager` has no default injected services;
+an oracle requiring one must declare it explicitly in its registration and
+test the boundary.
 
 ### Adding a Merge Policy
 
@@ -314,16 +320,17 @@ it.
 
 Managers expose `register(name)`, `build(method, *, services=None,
 **parameters)`, `methods()` and `validate(method, parameters)`
-(`optimization/components/*/manager.py`). Built-in strategy packages are
-imported by `core.validation`/`core.builder`, which runs their module-level
+(`optimization/components/*/manager.py`) as facades over the shared
+`Registry`. Built-in strategy packages are loaded once by
+`registry.load_builtin_registrations()`, which imports their module-level
 `@Manager.register(...)` decorators. Registration names must be unique
 inside their family.
 
 Walkers, mutation generators and filters route construction through
-`build_with_services` (`utils/strategy_factory.py`), which injects a
-developer-owned service (for example `autoencoder`) only when the factory
-signature declares a parameter with that exact name, and raises if a user
-parameter tries to override it:
+`Registry.build`. Their manager facades declare `autoencoder` as an
+available composition-root service; the registry injects it only when the
+factory signature declares that parameter, and rejects any YAML attempt to
+override it:
 
 ```python
 @WalkerManager.register("new_walker")
@@ -331,9 +338,9 @@ def build_new_walker(autoencoder, **parameters):
     return NewWalker(NewWalkerImplementation(autoencoder, **parameters))
 ```
 
-Oracles register a plain factory (no service injection) and typically pin an
-explicit parameter contract, since `BlackBoxOracle` factories translate
-parameters rather than exposing them 1:1:
+Oracles do not receive a service by default and typically pin an explicit
+parameter contract, since `BlackBoxOracle` factories translate parameters
+rather than exposing them 1:1:
 
 ```python
 @OracleManager.register("new_oracle")
@@ -344,20 +351,18 @@ def build_new_oracle(**parameters):
 
 ### Parameter Validation
 
-`validate_factory_parameters` (`utils/strategy_factory.py`) infers accepted
-and required parameters from the factory's own signature by default. Use
-`@parameter_contract(source=Type)` when a different constructor accurately
-declares public parameters, or explicit `accepted`/`required` sets when a
-factory translates parameters or uses `*args`/`**kwargs` (as every oracle
-factory does).
-
-Injected service names (`service_names` passed to `validate_factory_parameters`,
-e.g. `{"autoencoder"}`) are excluded from unknown/required-parameter checks.
-Do not accept arbitrary unknown user parameters only to ignore them.
+`Registry.validate` infers accepted and required parameters from the
+registered factory signature by default. Use explicit `accepted`/`required`
+sets through `@parameter_contract` when a factory translates parameters or
+uses `*args`/`**kwargs` (as every oracle factory does). Service names declared
+in a registry entry are excluded from user-parameter checks and must never be
+accepted from YAML. Do not accept arbitrary unknown parameters only to ignore
+them.
 
 Every configuration grid is validated after value substitution — a method
-grid therefore requires its unchanged parameter mapping to be accepted by
-every selected method.
+grid therefore requires its parameter mapping to be accepted by every selected
+method. Family validators additionally validate the nested declarations used
+by `sorbes`, `mutang` and `ranked`.
 
 ## Mandatory Requirements
 
@@ -454,17 +459,17 @@ methods or parameters. Use the mock sequence CSV under
 `assets/peptides_data/`. Validate before a full run:
 
 ```bash
-uv run --extra cu118 pep-compass dry-run \
+uv run --extra <cpu-or-cuda-extra> pep-compass dry-run \
   assets/experiments/configs/validation/<configuration>.yaml
 
-uv run --extra cu118 pep-compass test-run \
+uv run --extra <cpu-or-cuda-extra> pep-compass test-run \
   assets/experiments/configs/validation/<configuration>.yaml
 ```
 
 Then execute the smallest real variant needed to exercise the component with
 `pep-compass run`.
 
-## Extension Checklist
+## Extension Checklist (for LLMs)
 
 - [ ] The implementation belongs to an existing component family, or a new
       family is justified in [Architecture Decisions](architecture-decisions.md).

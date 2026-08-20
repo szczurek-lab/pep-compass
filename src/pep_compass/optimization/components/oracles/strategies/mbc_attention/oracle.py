@@ -19,6 +19,8 @@ class MBCAttentionBlackBox(AbstractBlackBox):
         evaluation_budget: int = float("inf"),
         force_isolation: bool = False,
         device: str = "cpu",
+        model: str = "default",
+        models_directory: str | None = None,
     ):
         super().__init__(
             batch_size=batch_size,
@@ -29,7 +31,11 @@ class MBCAttentionBlackBox(AbstractBlackBox):
         )
         
         self.device = device
-        self.mbc_attention_predictor = PredictorMBCAttention(device=device)
+        self.mbc_attention_predictor = PredictorMBCAttention(
+            device=device,
+            model=model,
+            models_directory=models_directory,
+        )
         
         # MBC Attention returns a single prediction value, so no aggregation needed
         self.peptide_scorer = lambda x: np.log2(self.mbc_attention_predictor.predict(x).flatten())

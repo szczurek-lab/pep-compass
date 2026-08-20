@@ -43,10 +43,9 @@ def validate_pipeline_specification(specification: PipelineSpecification) -> Non
 
 def validate_registered_components(specification: PipelineSpecification) -> None:
     """Validate registered methods and parameters without constructing models."""
-    import pep_compass.optimization.components.filters.registry  # noqa: F401
-    import pep_compass.optimization.components.mutation_generators.strategies  # noqa: F401
-    import pep_compass.optimization.components.oracles.strategies  # noqa: F401
-    import pep_compass.optimization.components.walkers.strategies  # noqa: F401
+    from pep_compass.registry import load_builtin_registrations
+
+    load_builtin_registrations()
 
     _validate_registered_step(specification.root)
 
@@ -183,18 +182,10 @@ def _component_kinds(specification: StepSpecification) -> set[str]:
 def _validate_registered_step(specification: StepSpecification) -> None:
     """Recursively validate component registry contracts."""
     if isinstance(specification, ComponentSpecification):
-        from pep_compass.optimization.components.filters import FilterManager
-        from pep_compass.optimization.components.mutation_generators import MutationGeneratorManager
-        from pep_compass.optimization.components.oracles import OracleManager
-        from pep_compass.optimization.components.walkers import WalkerManager
+        from pep_compass.registry import component_catalog
 
-        managers = {
-            "filter": FilterManager,
-            "mutation_generator": MutationGeneratorManager,
-            "oracle": OracleManager,
-            "walker": WalkerManager,
-        }
-        managers[specification.kind].validate(
+        component_catalog.validate(
+            specification.kind,
             specification.method,
             specification.parameters,
         )

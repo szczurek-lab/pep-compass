@@ -21,6 +21,16 @@ class SorbesWalker(Walker):
         sequences = context.autoencoder.decode_peptides(step.positions)
         fields = dict(batch.fields)
         point_ids = context.state.next_point_ids(len(batch))
+        parent_ids = fields.get("lineage.candidate_id")
+        if isinstance(parent_ids, TensorField):
+            fields["lineage.parent_candidate_id"] = TensorField(parent_ids.values)
+        fields["lineage.candidate_id"] = TensorField(
+            torch.as_tensor(
+                context.state.next_candidate_ids(len(batch)),
+                dtype=torch.long,
+                device=step.positions.device,
+            )
+        )
         point_geometries = [
             PointGeometry(point_ids[index], step.geometry.select(index), id(self.sorbes.geometry))
             for index in range(len(batch))

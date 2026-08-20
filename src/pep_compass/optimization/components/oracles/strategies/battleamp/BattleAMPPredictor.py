@@ -1,10 +1,12 @@
-import os
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 import math
 from tqdm import tqdm
 from .utils import chopping, padding, onehot_encoding, prepare_CNN
+from pep_compass.optimization.components.oracles.model_registry import (
+    resolve_oracle_model,
+)
 
 
 class PredictorBattleAMP:
@@ -13,7 +15,13 @@ class PredictorBattleAMP:
     Predicts antimicrobial activity (MIC values) for peptide sequences.
     """
 
-    def __init__(self, device="cpu", batch_size=3000, path="default"):
+    def __init__(
+        self,
+        device="cpu",
+        batch_size=3000,
+        model="default",
+        models_directory=None,
+    ):
         """
         Initialize the BattleAMP predictor.
         
@@ -21,21 +29,21 @@ class PredictorBattleAMP:
             device (str): Device to use for computation ("cpu" or "cuda"). 
                          Note: TensorFlow will handle GPU allocation automatically.
             batch_size (int): Batch size for processing sequences.
-            path (str): Path configuration - currently only "default" supported.
+            model (str): Registered BattleAMP model variant.
+            models_directory (str, optional): Replacement strategy package root.
         """
         self.device = device
         self.batch_size = batch_size
-        self.path = path
-        
-        if path != "default":
-            raise ValueError("Path option not recognized. Currently only 'default' is supported.")
-            
-        # Load the pre-trained BattleAMP model
-        self.file_dir = os.path.dirname(os.path.abspath(__file__))
-        model_path = os.path.join(self.file_dir, "model.h5")
-        
-        if not os.path.exists(model_path):
-            raise FileNotFoundError(f"BattleAMP model not found at {model_path}")
+        self.model_name = model
+
+        # Model resolution
+        ## Validate the complete named artifact before TensorFlow initialization
+        _, model_paths = resolve_oracle_model(
+            "battleamp",
+            model,
+            models_directory=models_directory,
+        )
+        model_path = model_paths[0]
 
         if str(device).startswith("cpu"):
            # Max - debbuging: Zmiana z pozostawienia TensorFlow dostępu do wykrytych GPU na jawne ukrycie GPU ~BattleAMP działa w osobnym procesie na CPU, więc TensorFlow nie może inicjalizować CUDA ani rezerwować pamięci GPU używanej przez PyTorch.
