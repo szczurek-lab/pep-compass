@@ -1,0 +1,40 @@
+experiment:
+  name: optimization_flow_smoke_matrix
+  seed: 603
+  input:
+    sequences:
+    - FLYKWWIRIGRLKL
+    repetitions: 1
+  grid:
+    steps.0.loop.iterations:
+    - 0
+    - 1
+    - 2
+  output_directory: experiments/results/validation/optimization_flow
+tracking:
+  level: normal
+  store_latents: false
+  store_fields: false
+execution:
+  backend: local
+  max_workers: 1
+autoencoder:
+  method: hydramp
+  device: cpu
+  parameters:
+    jacobian_mode: approx
+    jacobian_eps: 0.001
+    field_eps: 0.001
+  model: article_25
+pipeline:
+  limits:
+    oracle_calls: null
+    generated_candidates: null
+  steps:
+  - loop:
+      iterations: 1
+      steps:
+      - filter:
+          method: deduplicate
+          parameters:
+            key: sequence

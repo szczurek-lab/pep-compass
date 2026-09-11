@@ -1,8 +1,0 @@
-{
-  "extends": "lebo.json",
-  "output_path": "./results/lebo_kappa",
-  "grid": {
-    "black_box.name": ["battleamp", "hydrophobicity", "toxipep"],
-    "walker.horizontal_threshold": [0.01, 0.05, 0.1, 0.2]
-  }
-}

@@ -1,6 +1,0 @@
-{
-  "extends": "../../base.json",
-  "optimizer": {"lebo": {"candidate_strategy": "tandem"}},
-  "output_path": "./results/tandem",
-  "filter": {"top_p": 0.9, "temperature": 1.0}
-}

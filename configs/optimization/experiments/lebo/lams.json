@@ -1,6 +1,0 @@
-{
-  "extends": "../../base.json",
-  "optimizer": {"lebo": {"candidate_strategy": "lams"}},
-  "output_path": "./results/lams",
-  "filter": {"similarity_threshold": 0.15}
-}

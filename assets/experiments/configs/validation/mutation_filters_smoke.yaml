@@ -1,0 +1,59 @@
+experiment:
+  name: mutation_filter_smoke_matrix
+  seed: 202
+  input:
+    sequences:
+    - FLYKWWIRIGRLKL
+    repetitions: 1
+  grid:
+    steps.0.loop.steps.2.filter.method:
+    - lpbebo
+    - lams
+    - tandem
+    - move
+    - random_walker
+    - random_mutang
+  output_directory: experiments/results/validation/mutation_filters
+tracking:
+  level: normal
+  store_latents: false
+  store_fields: true
+execution:
+  backend: subprocess
+  max_workers: 1
+autoencoder:
+  method: hydramp
+  device: cpu
+  parameters:
+    jacobian_mode: approx
+    jacobian_eps: 0.001
+    field_eps: 0.001
+  model: article_25
+pipeline:
+  limits:
+    oracle_calls: 2
+    generated_candidates: 100000
+  steps:
+  - loop:
+      iterations: 2
+      steps:
+      - walker:
+          method: sorbes
+          parameters:
+            horizontal_threshold: 0.001
+            time_step: 0.01
+            max_horizontal_update_norm: 0.1
+            vertical_movement: false
+      - mutation_generator:
+          method: mutang
+          parameters: {}
+      - filter:
+          method: lpbebo
+          parameters: {}
+      - filter:
+          method: deduplicate
+          parameters:
+            key: sequence_and_latent
+      - oracle:
+          method: hydrophobicity
+          parameters: {}

@@ -1,0 +1,98 @@
+
+experiment:
+  name: locality_experiments_latent_escaping_06_08_26
+  seed: 1234
+  seed_scope: task
+  input:
+    # sequences:
+    # - FLYKWWIRIGRLKL
+    # repetitions: 1
+    csv:
+      path: assets/peptides_data/peptides_base.csv
+      sequence_column: sequence
+        
+  grid:
+    steps.0.local_enumeration.mutation_generator.parameters.direction_significance_threshold:
+    - 1.0e-06
+    - 1.0e-05
+    - 1.0e-04
+  output_directory: experiments/results/functinaltiy test/run
+tracking:
+  level: all
+  max_depth: null
+  store_latents: true
+  store_fields: true
+  field_names:
+  - filter.LpbeboFilter.score
+execution:
+  backend: local
+  max_workers: 1
+autoencoder:
+  method: hydramp
+  device: cuda
+  parameters:
+    jacobian_mode: approx
+    jacobian_eps: 0.001
+    field_eps: 0.001
+  model: article_25
+pipeline:
+  limits:
+    generated_candidates: 1000000
+  steps:
+    # Local Enumeration from the reference implementation:
+    # 10 independent SORBES trajectories, each with diffusion time 0.1.
+    - local_enumeration:
+        trajectories: 10
+        # Batch independent SORBES trajectories into shared GPU kernels.
+        trajectory_execution: batched
+        iterations: 10
+        include_walk_points: true
+
+        walker:
+          method: sorbes
+          parameters:
+            geometry:
+              method: kappa_stable
+              parameters:
+                # Equivalent to the historical singular-value threshold 0.1.
+                kappa: 0.01
+            directions:
+              method: active_inactive
+              parameters:
+                vertical_movement: true
+            scaling:
+              method: stable_dimension
+              parameters: {}
+            position_update:
+              method: main
+              parameters:
+                epsilon: 0.1
+                delta_max: 0.5
+            boundary:
+              method: main
+              parameters: {}
+
+        mutation_generator:
+          method: mutang
+          parameters:
+            max_len: 25
+            direction_significance_threshold: 0.001
+            min_number_of_directions: 5
+            token_threshold: 0.1
+            maximum_candidates: 1000
+            strategies:
+              geometry:
+                # Reuse G_(i+1) produced by SORBES; do not recompute SVD.
+                method: shared
+
+        filters:
+          - method: levenshtein
+            parameters:
+              reference_field: local_enumeration.center_sequence
+              maximum_distance: 5
+
+    - filter:
+        method: lpbebo
+        parameters:
+          top_p: 1.0
+          temperature: 1.0

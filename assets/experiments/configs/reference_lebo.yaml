@@ -1,0 +1,143 @@
+# Reference LE-BO configuration reconstructed from origin/dev.
+# REMARK: Values below reproduce configs/optimization/base.json and lebo.json.
+# Items not stated unambiguously in the paper are marked for verification.
+experiment:
+  name: reference_lebo_apex
+  seed: 1234
+  input:
+    sequences:
+      - FLYKWWIRIGRLKL
+    repetitions: 1
+  output_directory: experiments/results/reference_lebo_batched/run
+
+tracking:
+  level: normal
+  max_depth: null
+  store_latents: true
+  store_fields: true
+
+execution:
+  backend: local
+  max_workers: 1
+
+autoencoder:
+  method: hydramp
+  model: article_25
+  device: cuda
+  parameters:
+    jacobian_mode: approx
+    jacobian_eps: 0.05
+    field_eps: 0.05
+
+pipeline:
+  limits:
+    # origin/dev uses evaluation_budget=1400.
+    oracle_calls: 1400
+    generated_candidates: 1000000
+
+  steps:
+    - loop:
+        # Safety ceiling. The oracle budget is the effective stopping condition.
+        iterations: 1000
+        steps:
+          # Local Enumeration from the reference implementation:
+          # 10 independent SORBES trajectories, each with diffusion time 0.1.
+          - local_enumeration:
+              trajectories: 10
+              # Batch independent SORBES trajectories into shared GPU kernels.
+              trajectory_execution: batched
+              walk_time: 0.1
+              include_walk_points: false
+
+              walker:
+                method: sorbes
+                parameters:
+                  geometry:
+                    method: kappa_stable
+                    parameters:
+                      # Equivalent to the historical singular-value threshold 0.1.
+                      kappa: 0.01
+                  directions:
+                    method: active_inactive
+                    parameters:
+                      vertical_movement: true
+                  scaling:
+                    method: stable_dimension
+                    parameters: {}
+                  position_update:
+                    method: main
+                    parameters:
+                      epsilon: 0.1
+                      delta_max: 0.5
+                  boundary:
+                    method: main
+                    parameters: {}
+
+              mutation_generator:
+                method: mutang
+                parameters:
+                  max_len: 25
+                  direction_significance_threshold: 0.001
+                  min_number_of_directions: 5
+                  token_threshold: 0.1
+                  strategies:
+                    geometry:
+                      # Reuse G_(i+1) produced by SORBES; do not recompute SVD.
+                      method: shared
+
+              filters:
+                - method: levenshtein
+                  parameters:
+                    reference_field: local_enumeration.center_sequence
+                    maximum_distance: 4
+
+          - filter:
+              method: deduplicate
+              parameters:
+                key: sequence
+
+          # The origin/dev reference keeps the sequence trust-region radius at 2.
+          - filter:
+              method: trust_region
+              parameters:
+                objective: apex
+                geometry: sequence
+                initial_radius: 2
+
+          - filter:
+              method: robot
+              parameters:
+                objective: apex
+                batch_size: 3
+                maximize: false
+                diversity_threshold: 2
+                acquisition_batch_size: 32
+                standardize: false
+                device: cuda
+
+          - oracle:
+              method: apex
+              parameters:
+                model: default
+                mic_aggregate: mean
+                mic_bacteria: [1, 2, 3]
+                device: cpu
+                evaluation_batch_size: 128
+
+          - filter:
+              method: trust_region_update
+              parameters:
+                objective: apex
+                initial_radius: 2
+                minimum_radius: 2
+                maximum_radius: 2
+                expand_factor: 2.0
+                shrink_factor: 0.5
+                success_tolerance: 100
+                failure_tolerance: 1
+                maximize: false
+
+# TODO: Verify against the final publication artifacts:
+# - whether the reported evaluation budget is 1400 for every published task;
+# - whether best_as_center=false changes the center-selection flow;
+# - whether the fixed trust-region radius 2 is intentional or an experiment override.

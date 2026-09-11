@@ -1,80 +1,124 @@
 # PepCompass
 
-### Installation
+## Introduction
 
-We suggest using [uv](https://docs.astral.sh/uv/) for dependency management. To install the package with dependencies, run:
+PepCompass is a research library for peptide optimisation with latent-space
+geometry, composable candidate-generation steps, decision filters and
+biological oracles.
 
-Install uv
+### Research Context
+
+The repository contains implementations and migrated model code used to study
+latent-space locality and peptide optimisation. Scientific equivalence of
+migrated strategies must be validated against their source implementations and
+associated research material before reported results are treated as reproduced.
+
+## Installation
+
+### Library 
+
+PepCompass uses [uv](https://docs.astral.sh/uv/) for environment management.
+Install uv:
+
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-Create environment
+Create one supported environment:
 
 ```bash
-# CPU only enironment
-uv sync
-```
+# without torch
+uv sync 
 
-or
+# CPU
+uv sync --extra cpu
 
-```bash
+# CUDA 11.8
+uv sync --extra cu118
+
 # CUDA 12.6
 uv sync --extra cu126
-```
 
-or
-
-```bash
 # CUDA 12.8
 uv sync --extra cu128
 ```
 
-# Optimization runner
+### Models 
+To be able to run experiments you need to download models weights. 
+
+We provide helper scripts for downloading those models. If model is already present, script will not download it again. 
+
+#### BattleAMP
 
 ```bash
-uv run python scripts/run_optimization.py \
-  --config configs/optimization/lebo.json
+# HydraAMP from article (peptides of length equal to 25)
+bash assets/scripts/downloads/hydraAMP/download_hydramp_model.sh 
 ```
 
-The same runner supports parameter grids, multiple starting sequences, Slurm
-`srun`, all LE-BO variants, random mutation, CMA-ES, SAASBO, and LaMBO2. See
-[`docs/optimization_runners.md`](docs/optimization_runners.md) for the complete
-configuration reference. For example, run random mutation with ESM filtering:
+> Each script installs weights below
+> `src/pep_compass/autoencoder/strategies/hydramp/models/<model>`.
+
+#### APEX Model
+
 
 ```bash
-uv run python scripts/run_optimization.py \
-  --config configs/optimization/random_mutation_esm.json
+# model: default (8-pathogen article set)
+assets/scripts/downloads/apex/download_apex_models_default.sh  
+
+# model: full (34-pathogen set, ~1 GB)
+assets/scripts/downloads/apex/download_apex_models_full.sh     
 ```
 
-# Baselines and BlackBoxes
+> Each script installs weights below
+> `src/pep_compass/optimization/components/oracles/strategies/apex/models/<model>`.
 
-Different baselines and black-boxes needs different packages.
+## Run
 
-To run toxi:
-
-```
-uv sync
-uv pip install "tensorflow[and-cuda]==2.20"
-uv pip install "numpy==2.3"
-```
-
-To run battle:
-
-TBA
-
-
-### Getting APEX model weights
-APEX weights are required for APEX-based evaluation/optimization.
-
-Run the initialization script from the repository root:
+`pep-compass` is the console entry point (`src/pep_compass/runtime/cli.py`).
+Verify a configuration without loading any model:
 
 ```bash
-scripts/initialization/download_apex_models_article.sh
+uv run --extra cu118 pep-compass dry-run \
+  assets/experiments/configs/validation/optimization_flow_smoke.yaml
 ```
 
-The script downloads only
-`optimization/apex_oracle/APEX_pathogen_models` from
-[APEXGo](https://github.com/Yimeng-Zeng/APEXGo) and installs it in
-`src/pep_compass/models/apex/APEX_pathogen_models`. Existing weights are never
-overwritten.
+Then execute a small bounded run with real models and no persisted output:
+
+```bash
+uv run --extra cu118 pep-compass test-run \
+  assets/experiments/configs/composable_example.yaml \
+  --device cpu
+```
+
+And a full run, persisting results under `experiment.output_directory`:
+
+```bash
+uv run --extra cu118 pep-compass run \
+  assets/experiments/configs/composable_example.yaml
+```
+
+Every command and flag (`--device`, `--run-index`, backends, Slurm) is
+documented in [User Guide § Commands](docs/user-guide.md#commands).
+
+## Guides
+
+- [User Guide](docs/user-guide.md) — configure and execute an experiment.
+- [Analysis Guide](docs/analysis-guide.md) — inspect persisted results with
+  `analysis.reader`.
+- [Technical Architecture](docs/technical-architecture.md) — inspect internal
+  component and data flow.
+- [Developer Guide](docs/developer-guide.md) — extend and validate the package.
+
+## Documentation
+
+The complete documentation entry page is [docs/README.md](docs/README.md).
+
+- [User Guide](docs/user-guide.md)
+- [Technical Architecture](docs/technical-architecture.md)
+- [Developer Guide](docs/developer-guide.md)
+- [Analysis Guide](docs/analysis-guide.md)
+- [Architecture Decisions](docs/architecture-decisions.md)
+
+## Citation
+
+If you use our model cite [this article](https://www.researchgate.net/publication/396142806_PepCompass_Navigating_peptide_embedding_spaces_using_Riemannian_Geometry)

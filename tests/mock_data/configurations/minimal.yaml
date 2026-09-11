@@ -1,0 +1,24 @@
+experiment:
+  name: mock
+  input:
+    sequences: [AA]
+  output_directory: results/mock
+  seed: 7
+
+autoencoder:
+  method: hydramp
+  model: article_25
+  device: cpu
+  parameters:
+    jacobian_eps: 0.001
+    field_eps: 0.001
+
+pipeline:
+  steps: []
+
+tracking:
+  level: normal
+  monitor_stability: true
+
+execution:
+  backend: local

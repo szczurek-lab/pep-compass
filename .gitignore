@@ -11,7 +11,6 @@ __pycache__/
 build/
 develop-eggs/
 dist/
-downloads/
 eggs/
 .eggs/
 lib/
@@ -212,10 +211,8 @@ cython_debug/
 
 results/
 
-# apex (model weight dirs use their own .gitignore; keep this file ignored)
-
-# model weights
-src/pep_compass/models/hydramp/weights/
+# Model weight directories (apex, hydramp, ...) use their own nested .gitignore
+# next to a README documenting the source and install script; no root entries needed.
 
 # dev dir
 dev/
@@ -228,3 +225,6 @@ data/*
 
 # Trash
 logs/
+
+
+tmp

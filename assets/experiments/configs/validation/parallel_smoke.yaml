@@ -1,0 +1,80 @@
+experiment:
+  name: parallel_branch_smoke
+  seed: 505
+  input:
+    sequences:
+    - FLYKWWIRIGRLKL
+    repetitions: 1
+  grid:
+    steps.0.parallel.execution:
+    - sequential
+    - concurrent
+  output_directory: experiments/results/validation/parallel
+tracking:
+  level: normal
+  store_latents: true
+  store_fields: true
+execution:
+  backend: local
+  max_workers: 1
+autoencoder:
+  method: hydramp
+  device: cpu
+  parameters:
+    jacobian_mode: approx
+    jacobian_eps: 0.001
+    field_eps: 0.001
+  model: article_25
+pipeline:
+  limits:
+    oracle_calls: 4
+    generated_candidates: 100000
+  steps:
+  - parallel:
+      execution: concurrent
+      merge: concatenate
+      branches:
+      - name: lpbebo_branch
+        steps:
+        - walker:
+            method: sorbes
+            parameters:
+              horizontal_threshold: 0.001
+              time_step: 0.01
+              max_horizontal_update_norm: 0.1
+              vertical_movement: false
+        - mutation_generator:
+            method: mutang
+            parameters: {}
+        - filter:
+            method: lpbebo
+            parameters: {}
+      - name: random_branch
+        steps:
+        - walker:
+            method: sorbes
+            parameters:
+              horizontal_threshold: 0.001
+              time_step: 0.01
+              max_horizontal_update_norm: 0.1
+              vertical_movement: false
+        - mutation_generator:
+            method: mutang
+            parameters: {}
+        - filter:
+            method: random_mutang
+            parameters: {}
+  - filter:
+      method: deduplicate
+      parameters:
+        key: sequence_and_latent
+  - filter:
+      method: robot
+      parameters:
+        objective: hydrophobicity
+        batch_size: 2
+        maximize: true
+        device: cpu
+  - oracle:
+      method: hydrophobicity
+      parameters: {}

@@ -1,6 +1,0 @@
-{
-  "extends": "../../base.json",
-  "optimizer": {"lebo": {"candidate_strategy": "move"}},
-  "output_path": "./results/move",
-  "filter": {"top_p": 0.6, "temperature": 1.0}
-}

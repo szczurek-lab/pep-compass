@@ -1,5 +1,0 @@
-{
-  "extends": "../../base.json",
-  "output_path": "./results/saasbo",
-  "optimizer": {"name": "saasbo"}
-}

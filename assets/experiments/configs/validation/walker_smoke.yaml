@@ -1,0 +1,39 @@
+experiment:
+  name: walker_smoke_matrix
+  seed: 601
+  input:
+    sequences:
+    - FLYKWWIRIGRLKL
+    repetitions: 1
+  grid:
+    steps.0.walker.parameters.vertical_movement:
+    - false
+    - true
+  output_directory: experiments/results/validation/walkers
+tracking:
+  level: normal
+  store_latents: true
+  store_fields: false
+execution:
+  backend: local
+  max_workers: 1
+autoencoder:
+  method: hydramp
+  device: cpu
+  parameters:
+    jacobian_mode: approx
+    jacobian_eps: 0.001
+    field_eps: 0.001
+  model: article_25
+pipeline:
+  limits:
+    oracle_calls: null
+    generated_candidates: null
+  steps:
+  - walker:
+      method: sorbes
+      parameters:
+        horizontal_threshold: 0.001
+        time_step: 0.01
+        max_horizontal_update_norm: 0.1
+        vertical_movement: false

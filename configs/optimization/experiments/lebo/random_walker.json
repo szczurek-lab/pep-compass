@@ -1,5 +1,0 @@
-{
-  "extends": "../../base.json",
-  "optimizer": {"lebo": {"candidate_strategy": "random_walker"}},
-  "output_path": "./results/random_lebo_walker"
-}

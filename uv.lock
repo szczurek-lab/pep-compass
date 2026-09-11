@@ -46,7 +46,7 @@ conflicts = [[
 ]]
 
 [options]
-exclude-newer = "2026-07-21T18:20:27.178811415Z"
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -250,7 +250,6 @@ dependencies = [
     { name = "threadpoolctl" },
     { name = "torch", version = "2.5.1+cu118", source = { registry = "https://download.pytorch.org/whl/cu118" }, marker = "extra == 'extra-11-pep-compass-cu118' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-11-pep-compass-cpu') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
-    { name = "torch", version = "2.10.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-11-pep-compass-cpu') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cu126", source = { registry = "https://download.pytorch.org/whl/cu126" }, marker = "extra == 'extra-11-pep-compass-cu126' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
@@ -551,7 +550,7 @@ name = "cuda-bindings"
 version = "12.9.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cuda-pathfinder", marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra != 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "cuda-pathfinder", marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu126') or (sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a9/2b/ebcbb60aa6dba830474cd360c42e10282f7a343c0a1f58d24fbd3b7c2d77/cuda_bindings-12.9.4-cp311-cp311-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:a6a429dc6c13148ff1e27c44f40a3dd23203823e637b87fd0854205195988306", size = 11840604, upload-time = "2025-10-21T14:51:34.565Z" },
@@ -1310,7 +1309,6 @@ dependencies = [
     { name = "scipy" },
     { name = "torch", version = "2.5.1+cu118", source = { registry = "https://download.pytorch.org/whl/cu118" }, marker = "extra == 'extra-11-pep-compass-cu118' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-11-pep-compass-cpu') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
-    { name = "torch", version = "2.10.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-11-pep-compass-cpu') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cu126", source = { registry = "https://download.pytorch.org/whl/cu126" }, marker = "extra == 'extra-11-pep-compass-cu126' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
@@ -2002,7 +2000,7 @@ name = "nvidia-cudnn-cu11"
 version = "9.1.0.70"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas-cu11", marker = "extra == 'extra-11-pep-compass-cu118' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-cublas-cu11", marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/00/3b/0b776f04e364cd99e4cf152c2a9eadb5934c67c9a91429da55169a9447fd/nvidia_cudnn_cu11-9.1.0.70-py3-none-manylinux2014_x86_64.whl", hash = "sha256:e6135ac63fe9d5b0b89cfb35c3fc1c1349f2b995becadf2e9dc21bca89d9633d", size = 663919573, upload-time = "2024-04-22T15:20:24.839Z" },
@@ -2014,8 +2012,8 @@ name = "nvidia-cudnn-cu12"
 version = "9.10.2.21"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas-cu12", version = "12.6.4.1", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-11-pep-compass-cu126' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
-    { name = "nvidia-cublas-cu12", version = "12.8.4.1", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-cublas-cu12", version = "12.6.4.1", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-cublas-cu12", version = "12.8.4.1", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fa/41/e79269ce215c857c935fd86bcfe91a451a584dfc27f1e068f568b9ad1ab7/nvidia_cudnn_cu12-9.10.2.21-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:c9132cc3f8958447b4910a1720036d9eff5928cc3179b0a51fb6d167c6cc87d8", size = 705026878, upload-time = "2025-06-06T21:52:51.348Z" },
@@ -2043,7 +2041,7 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "nvidia-nvjitlink-cu12", version = "12.6.85", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-11-pep-compass-cu126' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-nvjitlink-cu12", version = "12.6.85", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1f/37/c50d2b2f2c07e146776389e3080f4faf70bcc4fa6e19d65bb54ca174ebc3/nvidia_cufft_cu12-11.3.0.4-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:d16079550df460376455cba121db6564089176d9bac9e4f360493ca4741b22a6", size = 200164144, upload-time = "2024-11-20T17:40:58.288Z" },
@@ -2062,7 +2060,7 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "nvidia-nvjitlink-cu12", version = "12.8.93", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-nvjitlink-cu12", version = "12.8.93", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/60/bc/7771846d3a0272026c416fbb7e5f4c1f146d6d80704534d0b187dd6f4800/nvidia_cufft_cu12-11.3.3.83-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:848ef7224d6305cdb2a4df928759dca7b1201874787083b6e7550dd6765ce69a", size = 193109211, upload-time = "2025-03-07T01:44:56.873Z" },
@@ -2142,7 +2140,7 @@ name = "nvidia-cusolver-cu11"
 version = "11.4.1.48"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "nvidia-cublas-cu11", marker = "extra == 'extra-11-pep-compass-cu118' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-cublas-cu11", marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/55/ee/939ff0104991dd7bdabb4c9767994c612ba0e1c9a55672a1ddd42f5e5b16/nvidia_cusolver_cu11-11.4.1.48-py3-none-manylinux1_x86_64.whl", hash = "sha256:ca538f545645b7e6629140786d3127fe067b3d5a085bd794cde5bfe877c8926f", size = 128240842, upload-time = "2022-10-03T23:30:24.348Z" },
@@ -2160,9 +2158,9 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "nvidia-cublas-cu12", version = "12.6.4.1", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-11-pep-compass-cu126' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
-    { name = "nvidia-cusparse-cu12", version = "12.5.4.2", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-11-pep-compass-cu126' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
-    { name = "nvidia-nvjitlink-cu12", version = "12.6.85", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-11-pep-compass-cu126' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-cublas-cu12", version = "12.6.4.1", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-cusparse-cu12", version = "12.5.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-nvjitlink-cu12", version = "12.6.85", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/93/17/dbe1aa865e4fdc7b6d4d0dd308fdd5aaab60f939abfc0ea1954eac4fb113/nvidia_cusolver_cu12-11.7.1.2-py3-none-manylinux2014_aarch64.whl", hash = "sha256:0ce237ef60acde1efc457335a2ddadfd7610b892d94efee7b776c64bb1cac9e0", size = 157833628, upload-time = "2024-10-01T17:05:05.591Z" },
@@ -2181,9 +2179,9 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "nvidia-cublas-cu12", version = "12.8.4.1", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
-    { name = "nvidia-cusparse-cu12", version = "12.5.8.93", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
-    { name = "nvidia-nvjitlink-cu12", version = "12.8.93", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-cublas-cu12", version = "12.8.4.1", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-cusparse-cu12", version = "12.5.8.93", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-nvjitlink-cu12", version = "12.8.93", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c8/32/f7cd6ce8a7690544d084ea21c26e910a97e077c9b7f07bf5de623ee19981/nvidia_cusolver_cu12-11.7.3.90-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:db9ed69dbef9715071232caa9b69c52ac7de3a95773c2db65bdba85916e4e5c0", size = 267229841, upload-time = "2025-03-07T01:46:54.356Z" },
@@ -2211,7 +2209,7 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "nvidia-nvjitlink-cu12", version = "12.6.85", source = { registry = "https://pypi.org/simple" }, marker = "extra == 'extra-11-pep-compass-cu126' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-nvjitlink-cu12", version = "12.6.85", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/eb/eb/6681efd0aa7df96b4f8067b3ce7246833dd36830bb4cec8896182773db7d/nvidia_cusparse_cu12-12.5.4.2-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:d25b62fb18751758fe3c93a4a08eff08effedfe4edf1c6bb5afd0890fe88f887", size = 216451147, upload-time = "2024-11-20T17:44:18.055Z" },
@@ -2230,7 +2228,7 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "nvidia-nvjitlink-cu12", version = "12.8.93", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "nvidia-nvjitlink-cu12", version = "12.8.93", source = { registry = "https://pypi.org/simple" }, marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/bc/f7/cd777c4109681367721b00a106f491e0d0d15cfa1fd59672ce580ce42a97/nvidia_cusparse_cu12-12.5.8.93-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:9b6c161cb130be1a07a27ea6923df8141f3c295852f4b260c65f18f3e0a091dc", size = 288117129, upload-time = "2025-03-07T01:47:40.407Z" },
@@ -2430,10 +2428,8 @@ source = { editable = "." }
 dependencies = [
     { name = "bio" },
     { name = "blosum" },
-    { name = "botorch" },
     { name = "cachetools" },
     { name = "einops" },
-    { name = "fair-esm" },
     { name = "fire" },
     { name = "ipykernel" },
     { name = "levenshtein" },
@@ -2446,17 +2442,17 @@ dependencies = [
     { name = "numpy" },
     { name = "pandas" },
     { name = "peptides" },
-    { name = "poli-baselines" },
-    { name = "poli-core" },
+    { name = "poli-core", version = "1.3.1", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
+    { name = "poli-core", version = "1.3.1", source = { git = "https://github.com/MachineLearningLifeScience/poli.git#bc38921a51cbb28b835e34a785e830f3ef3b9eb7" }, marker = "extra == 'extra-11-pep-compass-cpu' or extra == 'extra-11-pep-compass-cu118' or extra == 'extra-11-pep-compass-cu126' or extra == 'extra-11-pep-compass-cu128'" },
     { name = "pyarrow" },
     { name = "pybktree" },
     { name = "pygsp" },
+    { name = "pyyaml" },
     { name = "rapidfuzz" },
     { name = "scikit-learn" },
     { name = "scikit-posthocs" },
     { name = "scipy" },
     { name = "seaborn" },
-    { name = "seqme", extra = ["aa-descriptors"] },
     { name = "setuptools" },
     { name = "sqlalchemy" },
     { name = "streamlit" },
@@ -2467,16 +2463,32 @@ dependencies = [
 
 [package.optional-dependencies]
 cpu = [
+    { name = "botorch" },
+    { name = "fair-esm" },
+    { name = "poli-baselines" },
+    { name = "seqme", extra = ["aa-descriptors"], marker = "extra == 'extra-11-pep-compass-cpu' or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-11-pep-compass-cpu') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-11-pep-compass-cpu') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
 ]
 cu118 = [
+    { name = "botorch" },
+    { name = "fair-esm" },
+    { name = "poli-baselines" },
+    { name = "seqme", extra = ["aa-descriptors"], marker = "extra == 'extra-11-pep-compass-cu118' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.5.1+cu118", source = { registry = "https://download.pytorch.org/whl/cu118" } },
 ]
 cu126 = [
+    { name = "botorch" },
+    { name = "fair-esm" },
+    { name = "poli-baselines" },
+    { name = "seqme", extra = ["aa-descriptors"], marker = "extra == 'extra-11-pep-compass-cu126' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cu126", source = { registry = "https://download.pytorch.org/whl/cu126" } },
 ]
 cu128 = [
+    { name = "botorch" },
+    { name = "fair-esm" },
+    { name = "poli-baselines" },
+    { name = "seqme", extra = ["aa-descriptors"], marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" } },
 ]
 
@@ -2489,10 +2501,16 @@ dev = [
 requires-dist = [
     { name = "bio", specifier = "~=1.7.1" },
     { name = "blosum", specifier = "~=2.0.3" },
-    { name = "botorch" },
+    { name = "botorch", marker = "extra == 'cpu'" },
+    { name = "botorch", marker = "extra == 'cu118'" },
+    { name = "botorch", marker = "extra == 'cu126'" },
+    { name = "botorch", marker = "extra == 'cu128'" },
     { name = "cachetools", specifier = "~=6.1.0" },
     { name = "einops", specifier = "~=0.8.0" },
-    { name = "fair-esm", specifier = ">=2.0.0" },
+    { name = "fair-esm", marker = "extra == 'cpu'", specifier = ">=2.0.0" },
+    { name = "fair-esm", marker = "extra == 'cu118'", specifier = ">=2.0.0" },
+    { name = "fair-esm", marker = "extra == 'cu126'", specifier = ">=2.0.0" },
+    { name = "fair-esm", marker = "extra == 'cu128'", specifier = ">=2.0.0" },
     { name = "fire", specifier = "~=0.6.0" },
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "levenshtein", specifier = "~=0.26.0" },
@@ -2505,17 +2523,24 @@ requires-dist = [
     { name = "numpy", specifier = "~=1.26.4" },
     { name = "pandas", specifier = "~=2.2.2" },
     { name = "peptides", specifier = "~=0.3.4" },
-    { name = "poli-baselines", git = "https://github.com/MachineLearningLifeScience/poli-baselines.git?rev=main" },
+    { name = "poli-baselines", marker = "extra == 'cpu'", git = "https://github.com/MachineLearningLifeScience/poli-baselines.git?rev=main" },
+    { name = "poli-baselines", marker = "extra == 'cu118'", git = "https://github.com/MachineLearningLifeScience/poli-baselines.git?rev=main" },
+    { name = "poli-baselines", marker = "extra == 'cu126'", git = "https://github.com/MachineLearningLifeScience/poli-baselines.git?rev=main" },
+    { name = "poli-baselines", marker = "extra == 'cu128'", git = "https://github.com/MachineLearningLifeScience/poli-baselines.git?rev=main" },
     { name = "poli-core" },
     { name = "pyarrow" },
     { name = "pybktree", specifier = "~=1.1" },
     { name = "pygsp", specifier = "~=0.5.1" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "rapidfuzz", specifier = "~=3.10.0" },
     { name = "scikit-learn", specifier = ">=1.7" },
     { name = "scikit-posthocs", specifier = "~=0.11.4" },
     { name = "scipy", specifier = "~=1.14.0" },
     { name = "seaborn", specifier = "~=0.13.2" },
-    { name = "seqme", extras = ["aa-descriptors"], specifier = ">=0.5.0" },
+    { name = "seqme", extras = ["aa-descriptors"], marker = "extra == 'cpu'", specifier = ">=0.5.0" },
+    { name = "seqme", extras = ["aa-descriptors"], marker = "extra == 'cu118'", specifier = ">=0.5.0" },
+    { name = "seqme", extras = ["aa-descriptors"], marker = "extra == 'cu126'", specifier = ">=0.5.0" },
+    { name = "seqme", extras = ["aa-descriptors"], marker = "extra == 'cu128'", specifier = ">=0.5.0" },
     { name = "setuptools", specifier = "~=69.5.1" },
     { name = "sqlalchemy", specifier = "~=2.0.20" },
     { name = "streamlit" },
@@ -2663,7 +2688,7 @@ dependencies = [
     { name = "botorch" },
     { name = "cma" },
     { name = "numpy" },
-    { name = "poli-core" },
+    { name = "poli-core", version = "1.3.1", source = { git = "https://github.com/MachineLearningLifeScience/poli.git#bc38921a51cbb28b835e34a785e830f3ef3b9eb7" } },
     { name = "pymoo" },
     { name = "rdkit" },
     { name = "selfies" },
@@ -2672,11 +2697,51 @@ dependencies = [
 [[package]]
 name = "poli-core"
 version = "1.3.1"
-source = { git = "https://github.com/MachineLearningLifeScience/poli.git#bc38921a51cbb28b835e34a785e830f3ef3b9eb7" }
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.12' and sys_platform == 'linux'",
+    "python_full_version >= '3.12' and sys_platform != 'linux'",
+    "python_full_version < '3.12' and sys_platform == 'linux'",
+    "python_full_version < '3.12' and sys_platform != 'linux'",
+]
 dependencies = [
-    { name = "numpy" },
-    { name = "rdkit" },
-    { name = "selfies" },
+    { name = "numpy", marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
+    { name = "rdkit", marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
+    { name = "selfies", marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/57/18/9fa1c579722e52f6b1fc60db927b5dbf307c40f2b43bbe654b4e16dc5681/poli-core-1.3.1.tar.gz", hash = "sha256:754371b5f824f4db7996e4c0d7b72ef1e6340eeef365b1409dc1deb751b197c4", size = 4675342, upload-time = "2025-09-28T13:08:40.31Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/02/4c/24f5598bf3620ae0dfad4107b2bbe9f179e5e510f530fd5f80d594e79bf0/poli_core-1.3.1-py3-none-any.whl", hash = "sha256:b8d19bf1a221f9d489feb8991342784bf24aa482c4c0fdba1ad111b01a16973f", size = 4824891, upload-time = "2025-09-28T13:08:42.683Z" },
+]
+
+[[package]]
+name = "poli-core"
+version = "1.3.1"
+source = { git = "https://github.com/MachineLearningLifeScience/poli.git#bc38921a51cbb28b835e34a785e830f3ef3b9eb7" }
+resolution-markers = [
+    "python_full_version >= '3.12' and sys_platform == 'linux' and extra != 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version >= '3.12' and sys_platform != 'linux' and extra != 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version < '3.12' and sys_platform == 'linux' and extra != 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version < '3.12' and sys_platform != 'linux' and extra != 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version >= '3.12' and sys_platform == 'linux' and extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version >= '3.12' and sys_platform != 'darwin' and sys_platform != 'linux' and extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version < '3.12' and sys_platform == 'linux' and extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'linux' and extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version >= '3.12' and sys_platform == 'darwin' and extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version < '3.12' and sys_platform == 'darwin' and extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version >= '3.12' and sys_platform == 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version >= '3.12' and sys_platform != 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version < '3.12' and sys_platform == 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version < '3.12' and sys_platform != 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
+    "python_full_version >= '3.12' and sys_platform == 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128'",
+    "python_full_version >= '3.12' and sys_platform != 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128'",
+    "python_full_version < '3.12' and sys_platform == 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128'",
+    "python_full_version < '3.12' and sys_platform != 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128'",
+]
+dependencies = [
+    { name = "numpy", marker = "extra == 'extra-11-pep-compass-cpu' or extra == 'extra-11-pep-compass-cu118' or extra == 'extra-11-pep-compass-cu126' or extra == 'extra-11-pep-compass-cu128'" },
+    { name = "rdkit", marker = "extra == 'extra-11-pep-compass-cpu' or extra == 'extra-11-pep-compass-cu118' or extra == 'extra-11-pep-compass-cu126' or extra == 'extra-11-pep-compass-cu128'" },
+    { name = "selfies", marker = "extra == 'extra-11-pep-compass-cpu' or extra == 'extra-11-pep-compass-cu118' or extra == 'extra-11-pep-compass-cu126' or extra == 'extra-11-pep-compass-cu128'" },
 ]
 
 [[package]]
@@ -3117,7 +3182,6 @@ dependencies = [
     { name = "pyro-api" },
     { name = "torch", version = "2.5.1+cu118", source = { registry = "https://download.pytorch.org/whl/cu118" }, marker = "extra == 'extra-11-pep-compass-cu118' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-11-pep-compass-cpu') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
-    { name = "torch", version = "2.10.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-11-pep-compass-cpu') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cu126", source = { registry = "https://download.pytorch.org/whl/cu126" }, marker = "extra == 'extra-11-pep-compass-cu126' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
@@ -3654,7 +3718,6 @@ dependencies = [
     { name = "scipy" },
     { name = "torch", version = "2.5.1+cu118", source = { registry = "https://download.pytorch.org/whl/cu118" }, marker = "extra == 'extra-11-pep-compass-cu118' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform == 'darwin' and extra == 'extra-11-pep-compass-cpu') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
-    { name = "torch", version = "2.10.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(sys_platform != 'darwin' and extra == 'extra-11-pep-compass-cpu') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cu126", source = { registry = "https://download.pytorch.org/whl/cu126" }, marker = "extra == 'extra-11-pep-compass-cu126' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "torch", version = "2.10.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
@@ -3872,13 +3935,9 @@ resolution-markers = [
     "python_full_version >= '3.12' and sys_platform != 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128'",
     "python_full_version < '3.12' and sys_platform == 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128'",
     "python_full_version < '3.12' and sys_platform != 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128'",
-    "python_full_version >= '3.12' and sys_platform == 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
-    "python_full_version >= '3.12' and sys_platform != 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
-    "python_full_version < '3.12' and sys_platform == 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
-    "python_full_version < '3.12' and sys_platform != 'linux' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128'",
 ]
 dependencies = [
-    { name = "mpmath", marker = "extra == 'extra-11-pep-compass-cpu' or extra != 'extra-11-pep-compass-cu118' or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "mpmath", marker = "extra == 'extra-11-pep-compass-cpu' or extra == 'extra-11-pep-compass-cu126' or extra == 'extra-11-pep-compass-cu128'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/83/d3/803453b36afefb7c2bb238361cd4ae6125a569b4db67cd9e79846ba2d68c/sympy-1.14.0.tar.gz", hash = "sha256:d3d3fe8df1e5a0b42f0e7bdf50541697dbe7d23746e894990c030e2b05e72517", size = 7793921, upload-time = "2025-04-27T18:05:01.611Z" }
 wheels = [
@@ -3990,61 +4049,6 @@ wheels = [
     { url = "https://download-r2.pytorch.org/whl/cpu/torch-2.10.0-cp313-none-macosx_11_0_arm64.whl", hash = "sha256:840351da59cedb7bcbc51981880050813c19ef6b898a7fecf73a3afc71aff3fe", upload-time = "2026-01-23T15:09:59Z" },
     { url = "https://download-r2.pytorch.org/whl/cpu/torch-2.10.0-cp314-cp314-macosx_14_0_arm64.whl", hash = "sha256:c88b1129fd4e14f0f882963c6728315caae35d2f47374d17edeed1edc7697497", upload-time = "2026-01-23T15:09:59Z" },
     { url = "https://download-r2.pytorch.org/whl/cpu/torch-2.10.0-cp314-cp314t-macosx_14_0_arm64.whl", hash = "sha256:f4bea7dc451267c028593751612ad559299589304e68df54ae7672427893ff2c", upload-time = "2026-01-23T15:10:01Z" },
-]
-
-[[package]]
-name = "torch"
-version = "2.10.0"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.12' and sys_platform == 'linux'",
-    "python_full_version >= '3.12' and sys_platform != 'linux'",
-    "python_full_version < '3.12' and sys_platform == 'linux'",
-    "python_full_version < '3.12' and sys_platform != 'linux'",
-]
-dependencies = [
-    { name = "filelock", marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
-    { name = "fsspec", marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
-    { name = "jinja2", marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
-    { name = "networkx", marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
-    { name = "setuptools", marker = "(python_full_version >= '3.12' and extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
-    { name = "sympy", version = "1.14.0", source = { registry = "https://pypi.org/simple" }, marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
-    { name = "typing-extensions", marker = "(extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128') or (extra != 'extra-11-pep-compass-cpu' and extra != 'extra-11-pep-compass-cu118' and extra != 'extra-11-pep-compass-cu126' and extra != 'extra-11-pep-compass-cu128')" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/8b/4b61d6e13f7108f36910df9ab4b58fd389cc2520d54d81b88660804aad99/torch-2.10.0-2-cp311-none-macosx_11_0_arm64.whl", hash = "sha256:418997cb02d0a0f1497cf6a09f63166f9f5df9f3e16c8a716ab76a72127c714f", size = 79423467, upload-time = "2026-02-10T21:44:48.711Z" },
-    { url = "https://files.pythonhosted.org/packages/d3/54/a2ba279afcca44bbd320d4e73675b282fcee3d81400ea1b53934efca6462/torch-2.10.0-2-cp312-none-macosx_11_0_arm64.whl", hash = "sha256:13ec4add8c3faaed8d13e0574f5cd4a323c11655546f91fbe6afa77b57423574", size = 79498202, upload-time = "2026-02-10T21:44:52.603Z" },
-    { url = "https://files.pythonhosted.org/packages/ec/23/2c9fe0c9c27f7f6cb865abcea8a4568f29f00acaeadfc6a37f6801f84cb4/torch-2.10.0-2-cp313-none-macosx_11_0_arm64.whl", hash = "sha256:e521c9f030a3774ed770a9c011751fb47c4d12029a3d6522116e48431f2ff89e", size = 79498254, upload-time = "2026-02-10T21:44:44.095Z" },
-    { url = "https://files.pythonhosted.org/packages/36/ab/7b562f1808d3f65414cd80a4f7d4bb00979d9355616c034c171249e1a303/torch-2.10.0-3-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:ac5bdcbb074384c66fa160c15b1ead77839e3fe7ed117d667249afce0acabfac", size = 915518691, upload-time = "2026-03-11T14:15:43.147Z" },
-    { url = "https://files.pythonhosted.org/packages/b3/7a/abada41517ce0011775f0f4eacc79659bc9bc6c361e6bfe6f7052a6b9363/torch-2.10.0-3-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:98c01b8bb5e3240426dcde1446eed6f40c778091c8544767ef1168fc663a05a6", size = 915622781, upload-time = "2026-03-11T14:17:11.354Z" },
-    { url = "https://files.pythonhosted.org/packages/ab/c6/4dfe238342ffdcec5aef1c96c457548762d33c40b45a1ab7033bb26d2ff2/torch-2.10.0-3-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:80b1b5bfe38eb0e9f5ff09f206dcac0a87aadd084230d4a36eea5ec5232c115b", size = 915627275, upload-time = "2026-03-11T14:16:11.325Z" },
-    { url = "https://files.pythonhosted.org/packages/d8/f0/72bf18847f58f877a6a8acf60614b14935e2f156d942483af1ffc081aea0/torch-2.10.0-3-cp313-cp313t-manylinux_2_28_x86_64.whl", hash = "sha256:46b3574d93a2a8134b3f5475cfb98e2eb46771794c57015f6ad1fb795ec25e49", size = 915523474, upload-time = "2026-03-11T14:17:44.422Z" },
-    { url = "https://files.pythonhosted.org/packages/f4/39/590742415c3030551944edc2ddc273ea1fdfe8ffb2780992e824f1ebee98/torch-2.10.0-3-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:b1d5e2aba4eb7f8e87fbe04f86442887f9167a35f092afe4c237dfcaaef6e328", size = 915632474, upload-time = "2026-03-11T14:15:13.666Z" },
-    { url = "https://files.pythonhosted.org/packages/b6/8e/34949484f764dde5b222b7fe3fede43e4a6f0da9d7f8c370bb617d629ee2/torch-2.10.0-3-cp314-cp314t-manylinux_2_28_x86_64.whl", hash = "sha256:0228d20b06701c05a8f978357f657817a4a63984b0c90745def81c18aedfa591", size = 915523882, upload-time = "2026-03-11T14:14:46.311Z" },
-    { url = "https://files.pythonhosted.org/packages/78/89/f5554b13ebd71e05c0b002f95148033e730d3f7067f67423026cc9c69410/torch-2.10.0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:3282d9febd1e4e476630a099692b44fdc214ee9bf8ee5377732d9d9dfe5712e4", size = 145992610, upload-time = "2026-01-21T16:25:26.327Z" },
-    { url = "https://files.pythonhosted.org/packages/ae/30/a3a2120621bf9c17779b169fc17e3dc29b230c29d0f8222f499f5e159aa8/torch-2.10.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:a2f9edd8dbc99f62bc4dfb78af7bf89499bca3d753423ac1b4e06592e467b763", size = 915607863, upload-time = "2026-01-21T16:25:06.696Z" },
-    { url = "https://files.pythonhosted.org/packages/6f/3d/c87b33c5f260a2a8ad68da7147e105f05868c281c63d65ed85aa4da98c66/torch-2.10.0-cp311-cp311-win_amd64.whl", hash = "sha256:29b7009dba4b7a1c960260fc8ac85022c784250af43af9fb0ebafc9883782ebd", size = 113723116, upload-time = "2026-01-21T16:25:21.916Z" },
-    { url = "https://files.pythonhosted.org/packages/61/d8/15b9d9d3a6b0c01b883787bd056acbe5cc321090d4b216d3ea89a8fcfdf3/torch-2.10.0-cp311-none-macosx_11_0_arm64.whl", hash = "sha256:b7bd80f3477b830dd166c707c5b0b82a898e7b16f59a7d9d42778dd058272e8b", size = 79423461, upload-time = "2026-01-21T16:24:50.266Z" },
-    { url = "https://files.pythonhosted.org/packages/cc/af/758e242e9102e9988969b5e621d41f36b8f258bb4a099109b7a4b4b50ea4/torch-2.10.0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:5fd4117d89ffd47e3dcc71e71a22efac24828ad781c7e46aaaf56bf7f2796acf", size = 145996088, upload-time = "2026-01-21T16:24:44.171Z" },
-    { url = "https://files.pythonhosted.org/packages/23/8e/3c74db5e53bff7ed9e34c8123e6a8bfef718b2450c35eefab85bb4a7e270/torch-2.10.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:787124e7db3b379d4f1ed54dd12ae7c741c16a4d29b49c0226a89bea50923ffb", size = 915711952, upload-time = "2026-01-21T16:23:53.503Z" },
-    { url = "https://files.pythonhosted.org/packages/6e/01/624c4324ca01f66ae4c7cd1b74eb16fb52596dce66dbe51eff95ef9e7a4c/torch-2.10.0-cp312-cp312-win_amd64.whl", hash = "sha256:2c66c61f44c5f903046cc696d088e21062644cbe541c7f1c4eaae88b2ad23547", size = 113757972, upload-time = "2026-01-21T16:24:39.516Z" },
-    { url = "https://files.pythonhosted.org/packages/c9/5c/dee910b87c4d5c0fcb41b50839ae04df87c1cfc663cf1b5fca7ea565eeaa/torch-2.10.0-cp312-none-macosx_11_0_arm64.whl", hash = "sha256:6d3707a61863d1c4d6ebba7be4ca320f42b869ee657e9b2c21c736bf17000294", size = 79498198, upload-time = "2026-01-21T16:24:34.704Z" },
-    { url = "https://files.pythonhosted.org/packages/c9/6f/f2e91e34e3fcba2e3fc8d8f74e7d6c22e74e480bbd1db7bc8900fdf3e95c/torch-2.10.0-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:5c4d217b14741e40776dd7074d9006fd28b8a97ef5654db959d8635b2fe5f29b", size = 146004247, upload-time = "2026-01-21T16:24:29.335Z" },
-    { url = "https://files.pythonhosted.org/packages/98/fb/5160261aeb5e1ee12ee95fe599d0541f7c976c3701d607d8fc29e623229f/torch-2.10.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:6b71486353fce0f9714ca0c9ef1c850a2ae766b409808acd58e9678a3edb7738", size = 915716445, upload-time = "2026-01-21T16:22:45.353Z" },
-    { url = "https://files.pythonhosted.org/packages/6a/16/502fb1b41e6d868e8deb5b0e3ae926bbb36dab8ceb0d1b769b266ad7b0c3/torch-2.10.0-cp313-cp313-win_amd64.whl", hash = "sha256:c2ee399c644dc92ef7bc0d4f7e74b5360c37cdbe7c5ba11318dda49ffac2bc57", size = 113757050, upload-time = "2026-01-21T16:24:19.204Z" },
-    { url = "https://files.pythonhosted.org/packages/1a/0b/39929b148f4824bc3ad6f9f72a29d4ad865bcf7ebfc2fa67584773e083d2/torch-2.10.0-cp313-cp313t-macosx_14_0_arm64.whl", hash = "sha256:3202429f58309b9fa96a614885eace4b7995729f44beb54d3e4a47773649d382", size = 79851305, upload-time = "2026-01-21T16:24:09.209Z" },
-    { url = "https://files.pythonhosted.org/packages/d8/14/21fbce63bc452381ba5f74a2c0a959fdf5ad5803ccc0c654e752e0dbe91a/torch-2.10.0-cp313-cp313t-manylinux_2_28_aarch64.whl", hash = "sha256:aae1b29cd68e50a9397f5ee897b9c24742e9e306f88a807a27d617f07adb3bd8", size = 146005472, upload-time = "2026-01-21T16:22:29.022Z" },
-    { url = "https://files.pythonhosted.org/packages/54/fd/b207d1c525cb570ef47f3e9f836b154685011fce11a2f444ba8a4084d042/torch-2.10.0-cp313-cp313t-manylinux_2_28_x86_64.whl", hash = "sha256:6021db85958db2f07ec94e1bc77212721ba4920c12a18dc552d2ae36a3eb163f", size = 915612644, upload-time = "2026-01-21T16:21:47.019Z" },
-    { url = "https://files.pythonhosted.org/packages/36/53/0197f868c75f1050b199fe58f9bf3bf3aecac9b4e85cc9c964383d745403/torch-2.10.0-cp313-cp313t-win_amd64.whl", hash = "sha256:ff43db38af76fda183156153983c9a096fc4c78d0cd1e07b14a2314c7f01c2c8", size = 113997015, upload-time = "2026-01-21T16:23:00.767Z" },
-    { url = "https://files.pythonhosted.org/packages/0e/13/e76b4d9c160e89fff48bf16b449ea324bda84745d2ab30294c37c2434c0d/torch-2.10.0-cp313-none-macosx_11_0_arm64.whl", hash = "sha256:cdf2a523d699b70d613243211ecaac14fe9c5df8a0b0a9c02add60fb2a413e0f", size = 79498248, upload-time = "2026-01-21T16:23:09.315Z" },
-    { url = "https://files.pythonhosted.org/packages/4f/93/716b5ac0155f1be70ed81bacc21269c3ece8dba0c249b9994094110bfc51/torch-2.10.0-cp314-cp314-macosx_14_0_arm64.whl", hash = "sha256:bf0d9ff448b0218e0433aeb198805192346c4fd659c852370d5cc245f602a06a", size = 79464992, upload-time = "2026-01-21T16:23:05.162Z" },
-    { url = "https://files.pythonhosted.org/packages/69/2b/51e663ff190c9d16d4a8271203b71bc73a16aa7619b9f271a69b9d4a936b/torch-2.10.0-cp314-cp314-manylinux_2_28_aarch64.whl", hash = "sha256:233aed0659a2503b831d8a67e9da66a62c996204c0bba4f4c442ccc0c68a3f60", size = 146018567, upload-time = "2026-01-21T16:22:23.393Z" },
-    { url = "https://files.pythonhosted.org/packages/5e/cd/4b95ef7f293b927c283db0b136c42be91c8ec6845c44de0238c8c23bdc80/torch-2.10.0-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:682497e16bdfa6efeec8cde66531bc8d1fbbbb4d8788ec6173c089ed3cc2bfe5", size = 915721646, upload-time = "2026-01-21T16:21:16.983Z" },
-    { url = "https://files.pythonhosted.org/packages/56/97/078a007208f8056d88ae43198833469e61a0a355abc0b070edd2c085eb9a/torch-2.10.0-cp314-cp314-win_amd64.whl", hash = "sha256:6528f13d2a8593a1a412ea07a99812495bec07e9224c28b2a25c0a30c7da025c", size = 113752373, upload-time = "2026-01-21T16:22:13.471Z" },
-    { url = "https://files.pythonhosted.org/packages/d8/94/71994e7d0d5238393df9732fdab607e37e2b56d26a746cb59fdb415f8966/torch-2.10.0-cp314-cp314t-macosx_14_0_arm64.whl", hash = "sha256:f5ab4ba32383061be0fb74bda772d470140a12c1c3b58a0cfbf3dae94d164c28", size = 79850324, upload-time = "2026-01-21T16:22:09.494Z" },
-    { url = "https://files.pythonhosted.org/packages/e2/65/1a05346b418ea8ccd10360eef4b3e0ce688fba544e76edec26913a8d0ee0/torch-2.10.0-cp314-cp314t-manylinux_2_28_aarch64.whl", hash = "sha256:716b01a176c2a5659c98f6b01bf868244abdd896526f1c692712ab36dbaf9b63", size = 146006482, upload-time = "2026-01-21T16:22:18.42Z" },
-    { url = "https://files.pythonhosted.org/packages/1d/b9/5f6f9d9e859fc3235f60578fa64f52c9c6e9b4327f0fe0defb6de5c0de31/torch-2.10.0-cp314-cp314t-manylinux_2_28_x86_64.whl", hash = "sha256:d8f5912ba938233f86361e891789595ff35ca4b4e2ac8fe3670895e5976731d6", size = 915613050, upload-time = "2026-01-21T16:20:49.035Z" },
-    { url = "https://files.pythonhosted.org/packages/66/4d/35352043ee0eaffdeff154fad67cd4a31dbed7ff8e3be1cc4549717d6d51/torch-2.10.0-cp314-cp314t-win_amd64.whl", hash = "sha256:71283a373f0ee2c89e0f0d5f446039bdabe8dbc3c9ccf35f0f784908b0acd185", size = 113995816, upload-time = "2026-01-21T16:22:05.312Z" },
 ]
 
 [[package]]
@@ -4265,7 +4269,7 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform == 'linux'",
 ]
 dependencies = [
-    { name = "filelock", marker = "extra == 'extra-11-pep-compass-cu118' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "filelock", marker = "(sys_platform == 'linux' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/86/17/d9a5cf4fcf46291856d1e90762e36cbabd2a56c7265da0d1d9508c8e3943/triton-3.1.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0f34f6e7885d1bf0eaaf7ba875a5f0ce6f3c13ba98f9503651c1e6dc6757ed5c", size = 209506424, upload-time = "2024-10-14T16:05:42.337Z" },
@@ -4301,7 +4305,7 @@ version = "0.27.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
+    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu118') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cpu' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu126') or (extra == 'extra-11-pep-compass-cu118' and extra == 'extra-11-pep-compass-cu128') or (extra == 'extra-11-pep-compass-cu126' and extra == 'extra-11-pep-compass-cu128')" },
     { name = "rich" },
     { name = "shellingham" },
 ]

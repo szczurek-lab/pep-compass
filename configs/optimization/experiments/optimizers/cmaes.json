@@ -1,5 +1,0 @@
-{
-  "extends": "../../base.json",
-  "output_path": "./results/cmaes",
-  "optimizer": {"name": "cmaes"}
-}

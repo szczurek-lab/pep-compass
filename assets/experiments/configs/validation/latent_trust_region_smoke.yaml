@@ -1,0 +1,71 @@
+experiment:
+  name: latent_trust_region_smoke
+  seed: 404
+  input:
+    sequences:
+    - FLYKWWIRIGRLKL
+    repetitions: 1
+  output_directory: experiments/results/validation/latent_trust_region
+tracking:
+  level: all
+  store_latents: true
+  store_fields: true
+execution:
+  backend: local
+  max_workers: 1
+autoencoder:
+  method: hydramp
+  device: cpu
+  parameters:
+    jacobian_mode: approx
+    jacobian_eps: 0.001
+    field_eps: 0.001
+  model: article_25
+pipeline:
+  limits:
+    oracle_calls: 3
+    generated_candidates: 100000
+  steps:
+  - loop:
+      iterations: 3
+      steps:
+      - walker:
+          method: sorbes
+          parameters:
+            horizontal_threshold: 0.001
+            time_step: 0.01
+            max_horizontal_update_norm: 0.1
+            vertical_movement: false
+      - mutation_generator:
+          method: mutang
+          parameters: {}
+      - filter:
+          method: deduplicate
+          parameters:
+            key: sequence_and_latent
+      - filter:
+          method: trust_region
+          parameters:
+            objective: hydrophobicity
+            geometry: latent
+            initial_radius: 2.0
+      - filter:
+          method: robot
+          parameters:
+            objective: hydrophobicity
+            batch_size: 1
+            maximize: true
+            device: cpu
+      - oracle:
+          method: hydrophobicity
+          parameters: {}
+      - filter:
+          method: trust_region_update
+          parameters:
+            objective: hydrophobicity
+            initial_radius: 2.0
+            minimum_radius: 0.25
+            maximum_radius: 8.0
+            success_tolerance: 2
+            failure_tolerance: 2
+            maximize: true

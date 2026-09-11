@@ -1,0 +1,1 @@
+"""Structural candidate-batch transformations."""

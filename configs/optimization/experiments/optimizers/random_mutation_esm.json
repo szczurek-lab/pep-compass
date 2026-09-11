@@ -1,7 +1,0 @@
-{
-  "extends": "../lebo/random_mutation.json",
-  "output_path": "./results/random_mutation_esm",
-  "optimizer": {
-    "random_mutation": {"esm_model_name": "esm2_t6_8M_UR50D"}
-  }
-}

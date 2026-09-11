@@ -1,0 +1,212 @@
+# REMARK: Functional reference configuration. Every commented-out block below
+# REMARK: is documentation, not a required change — the active (uncommented)
+# REMARK: keys below are enough to `pep-compass dry-run`/`test-run`/`run` this
+# REMARK: file as-is. Full explanations: docs/user-guide.md.
+# REMARK: Top-level sections are siblings, not nested: experiment, autoencoder,
+# REMARK: pipeline, tracking, execution.
+
+experiment:
+  name: composable_sorbes_mutang
+  seed: 1234
+  # seed_scope: run
+  # REMARK: seed_scope: "run" (default) gives every plan entry (input task x grid
+  # REMARK: variant) a distinct resolved seed. "task" keeps one input task's seed
+  # REMARK: fixed across grid variants, isolating a grid parameter's effect from
+  # REMARK: randomness.
+  input:
+    sequences:
+    - FLYKWWIRIGRLKL
+    # repetitions: 1
+    # REMARK: repetitions produces independent repeated runs of the same input,
+    # REMARK: not duplicated candidates inside one optimisation batch. Default 1.
+    # REMARK: CSV input is the mutually-exclusive alternative to `sequences`:
+    # csv:
+    #   path: data/peptides/peptides_smoke.csv
+    #   sequence_column: sequence
+    #   repetitions_column: repetitions
+  output_directory: results/composable_example
+  # REMARK: omit output_directory to disable persisted results entirely
+  # REMARK: (this is what `pep-compass test-run` forces automatically).
+  # grid: {}
+  # REMARK: grid maps dotted paths rooted at `pipeline` to lists of values; the
+  # REMARK: runner materialises their Cartesian product. The path must already
+  # REMARK: exist as a leaf in the base `pipeline` tree below, e.g.:
+  # grid:
+  #   pipeline.steps.0.loop.iterations: [1, 2]
+
+autoencoder:
+  method: hydramp
+  device: cpu # or cuda
+  # REMARK: method selects the implementation; hydramp is the only one
+  # REMARK: registered today.
+  parameters:
+    jacobian_eps: 0.001
+    field_eps: 0.001
+    # jacobian_mode: approx
+    # REMARK: jacobian_mode: "approx" (default) | "strict".
+  model: article_25
+  # REMARK: model selects a named checkpoint variant of `method`, independent
+  # REMARK: of which implementation is chosen (docs/architecture-decisions.md
+  # REMARK: #method-vs-model). article_25 is the only variant registered today.
+
+tracking:
+  level: short
+  # REMARK: level: "short" (oracle summaries only) | "normal" (default;
+  # REMARK: step summaries + streamed LocalEnumeration/SORBES checkpoints) |
+  # REMARK: "all" (same scalar tracking at every enabled depth).
+  candidate_snapshots: none
+  # REMARK: candidate_snapshots: "none" (default; final candidates remain in
+  # REMARK: candidates.csv) | "oracle" | "all". Keep this at "none" for
+  # REMARK: production; replay checkpoints are independent and remain compact.
+  max_depth: null
+  # REMARK: limit tracking collection by execution-tree depth without changing
+  # REMARK: which steps actually execute.
+  store_latents: true
+  # REMARK: serialize candidate latent origins into tracking rows.
+  store_fields: false
+  # REMARK: serialize algorithm fields; can produce large files when SORBES
+  # REMARK: tangent-space matrices are present. Enable only when needed.
+  # field_names: null
+  # REMARK: restrict store_fields to an explicit field-name allowlist instead
+  # REMARK: of every field.
+  # monitor_stability: true
+  # REMARK: default true; enables runtime RSS/CUDA sampling at step boundaries,
+  # REMARK: written to tracking/stability.csv.
+
+# execution:
+# REMARK: omitting `execution` entirely accepts every default shown below.
+#   backend: local
+#   REMARK: backend: "local" (default, in-process) | "subprocess" (isolated
+#   REMARK: local worker processes) | "slurm" (writes an array script, does
+#   REMARK: not submit it — see docs/user-guide.md#run).
+#   max_workers: 1
+#   resume: false
+#   REMARK: skip plan entries that already have a completed result.json.
+#   continue_on_error: false
+#   REMARK: keep executing remaining plan entries after one fails.
+#   slurm: {}
+#   REMARK: job_name, partition, time, gres, cpus_per_task, mem.
+
+pipeline:
+  limits:
+    oracle_calls: null
+    generated_candidates: 1000000
+    # REMARK: null disables a limit. oracle_calls bounds evaluated sequences
+    # REMARK: (an oracle truncates its input to the remaining budget).
+    # REMARK: generated_candidates is a stop condition on candidates reported
+    # REMARK: by mutation generators, not a per-step cap.
+  steps:
+  - loop:
+      iterations: 10
+      steps:
+      - walker:
+          method: sorbes
+          parameters:
+            horizontal_threshold: 0.001
+            time_step: 0.01
+            max_horizontal_update_norm: 0.1
+            vertical_movement: false
+          # REMARK: sorbes is the only registered walker: one fixed-order step of
+          # REMARK: geometry -> direction sampling -> position update -> boundary
+          # REMARK: check. Only position_update is currently pluggable:
+          # REMARK: position_update.method: "main" (default) | "article" |
+          # REMARK: "without_acceleration", e.g.:
+          # parameters:
+          #   position_update:
+          #     method: article
+          #     parameters: {epsilon: 0.1, delta_max: 0.5}
+      - mutation_generator:
+          method: mutang
+          parameters:
+            max_len: 25
+            direction_significance_threshold: 0.001
+            min_number_of_directions: 5
+            token_threshold: 0.1
+          # REMARK: mutang is the only registered mutation generator. It requires
+          # REMARK: walker.singular_values/walker.left_vectors, so a
+          # REMARK: mutation_generator step must follow a walker step (or run
+          # REMARK: inside local_enumeration, which wires this automatically).
+          # REMARK: max_len must match the autoencoder's model sequence length
+          # REMARK: (25 for HydrAMP article_25); it is not a candidate limit.
+      - filter:
+          method: deduplicate
+          parameters:
+            key: sequence_and_latent
+          # REMARK: -----------------------------------------------------------
+          # REMARK: Every other registered filter (docs/user-guide.md#filters
+          # REMARK: has full parameter tables):
+          # REMARK:
+          # REMARK: direct (self-contained transformations):
+          # REMARK:   candidate_subset     - cap batch size: random | highest | lowest by score
+          # REMARK:   levenshtein          - keep sequences within an edit-distance radius
+          # REMARK:   sequence_length      - keep sequences within a length interval
+          # REMARK:   robot                - Bayesian ROBOT selection (GP + LogEI + diversity)
+          # REMARK:   trust_region         - keep candidates inside the current trust-region radius
+          # REMARK:   trust_region_update  - expand/shrink the trust-region radius from oracle scores
+          # REMARK:   random_walker        - random-position mutation baseline (ablation)
+          # REMARK:   random_mutang        - random re-ranking of the MUTANG pool (ablation)
+          # REMARK:
+          # REMARK: ranked (a ScoreFunction + a SelectionRule composition):
+          # REMARK:   ranked               - generic composition, e.g.:
+          # REMARK:     method: ranked
+          # REMARK:     parameters:
+          # REMARK:       scoring: {method: tandem, parameters: {}}    # tandem | lams | move | decoder_likelihood | esm
+          # REMARK:       selection: {method: nucleus, parameters: {top_p: 0.9}}  # threshold | nucleus | top_k
+          # REMARK:   lpbebo               - decoder log-probability, nucleus top-p (pre-built ranked combo)
+          # REMARK:   lams                 - worst compatible mutation-pair similarity, threshold
+          # REMARK:   tandem               - projected pairwise mutation-direction similarity, nucleus top-p
+          # REMARK:   move                 - negative predicted net latent displacement, nucleus top-p
+          # REMARK:   esm_plausibility     - ESM2 pseudo-log-likelihood, threshold or top-k
+          # REMARK: -----------------------------------------------------------
+
+  # REMARK: =================================================================
+  # REMARK: Alternative step grammar, not used by the pipeline above.
+  # REMARK:
+  # REMARK: local_enumeration composes one walker + one mutation generator into
+  # REMARK: a bounded trajectory-exploration operation used by the reference
+  # REMARK: LE-BO pipeline (docs/technical-architecture.md#local-enumeration):
+  # REMARK:
+  # - local_enumeration:
+  #     walker: {method: sorbes, parameters: {...}}
+  #     mutation_generator: {method: mutang, parameters: {...}}
+  #     filters: # local filters applied after every mutation batch
+  #       - method: levenshtein
+  #         parameters:
+  #           maximum_distance: 4
+  #           reference_field: local_enumeration.center_sequence
+  #     trajectories: 10 # branches per input seed
+  #     trajectory_execution: batched # or sequential (reference implementation)
+  #     iterations: 10 # exactly one of iterations / walk_time is required
+  #     # walk_time: 0.1
+  #     include_walk_points: true
+  #
+  # REMARK: parallel runs independent branches on the same input batch and
+  # REMARK: merges them (merge: concatenate is the only implemented policy
+  # REMARK: today; interleave/select_best/weighted_sample raise
+  # REMARK: NotImplementedError — docs/architecture-decisions.md#known-issues):
+  # REMARK:
+  # - parallel:
+  #     replicas: 10
+  #     execution: sequential # or concurrent
+  #     merge: concatenate
+  #     steps: [...] # shared by every replica, named replica_000..replica_009
+  # REMARK: =================================================================
+
+  # REMARK: =================================================================
+  # REMARK: Every registered oracle, appended as a final `oracle:` step to
+  # REMARK: attach oracle.<name>.score to the batch (docs/user-guide.md#oracles):
+  # REMARK:
+  # REMARK:   apex             - requires model: <weight variant, e.g. default>
+  # REMARK:   apex_original    - preserved pre-refactor APEX, for comparison
+  # REMARK:   battleamp        - requires TensorFlow
+  # REMARK:   eipred
+  # REMARK:   hydrophobicity   - simple hydrophobicity-scale oracle, no external model
+  # REMARK:   mbc_attention    - requires TensorFlow
+  # REMARK:   toxipep
+  # REMARK:
+  # REMARK: All accept evaluation_batch_size and POLI controls (batch_size,
+  # REMARK: parallelize, num_workers, evaluation_budget, force_isolation):
+  # - oracle:
+  #     method: hydrophobicity
+  #     parameters: {}
+  # REMARK: =================================================================

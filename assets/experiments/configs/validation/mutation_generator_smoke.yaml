@@ -1,0 +1,44 @@
+experiment:
+  name: mutation_generator_smoke_matrix
+  seed: 602
+  input:
+    sequences:
+    - FLYKWWIRIGRLKL
+    repetitions: 1
+  grid:
+    steps.1.mutation_generator.parameters.token_threshold:
+    - 0.05
+    - 0.1
+    - 0.2
+  output_directory: experiments/results/validation/mutation_generators
+tracking:
+  level: all
+  store_latents: true
+  store_fields: true
+execution:
+  backend: local
+  max_workers: 1
+autoencoder:
+  method: hydramp
+  device: cpu
+  parameters:
+    jacobian_mode: approx
+    jacobian_eps: 0.001
+    field_eps: 0.001
+  model: article_25
+pipeline:
+  limits:
+    oracle_calls: null
+    generated_candidates: 100000
+  steps:
+  - walker:
+      method: sorbes
+      parameters:
+        horizontal_threshold: 0.001
+        time_step: 0.01
+        max_horizontal_update_norm: 0.1
+        vertical_movement: false
+  - mutation_generator:
+      method: mutang
+      parameters:
+        token_threshold: 0.1

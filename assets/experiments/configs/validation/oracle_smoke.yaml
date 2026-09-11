@@ -1,0 +1,39 @@
+experiment:
+  name: oracle_smoke_matrix
+  seed: 101
+  input:
+    sequences:
+    - FLYKWWIRIGRLKL
+    repetitions: 1
+  grid:
+    steps.0.oracle.method:
+    - hydrophobicity
+    - apex
+    - battleamp
+    - toxipep
+    - eipred
+    - mbc_attention
+  output_directory: experiments/results/validation/oracles
+tracking:
+  level: short
+  store_latents: false
+  store_fields: true
+execution:
+  backend: subprocess
+  max_workers: 1
+autoencoder:
+  method: hydramp
+  device: cpu
+  parameters:
+    jacobian_mode: approx
+    jacobian_eps: 0.001
+    field_eps: 0.001
+  model: article_25
+pipeline:
+  limits:
+    oracle_calls: 1
+    generated_candidates: null
+  steps:
+  - oracle:
+      method: hydrophobicity
+      parameters: {}

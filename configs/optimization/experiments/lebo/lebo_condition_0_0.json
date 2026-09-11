@@ -1,8 +1,0 @@
-{
-  "extends": "lebo.json",
-  "output_path": "./results/lebo_condition_0_0",
-  "encoder": {"default_condition": [0.0, 0.0]},
-  "grid": {
-    "black_box.name": ["battleamp", "hydrophobicity"]
-  }
-}
