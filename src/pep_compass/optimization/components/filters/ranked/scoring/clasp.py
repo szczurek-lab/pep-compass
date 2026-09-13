@@ -186,6 +186,7 @@ def build_clasp_potential(
     background: torch.Tensor | Sequence[float] | None = None,
     temperature: float = 1.0,
     device: str | torch.device = "cpu",
+    reduction: str = "sum",
 ) -> ClaspPotential:
     """Build a :class:`ClaspPotential` from MEROPS datasets and APEX predictors.
 
@@ -203,6 +204,8 @@ def build_clasp_potential(
     :param background: Optional background residue distribution.
     :param temperature: Mean-field temperature.
     :param device: Device for the potential.
+    :param reduction: Panel/bond aggregation for the cleavage term (``"sum"``,
+        ``"max_protease"``, or ``"max_cut"``); see :class:`CleavagePotential`.
     :return: A configured :class:`ClaspPotential`.
     """
     panel = load_protease_panel(
@@ -215,6 +218,7 @@ def build_clasp_potential(
         background=background,
         temperature=temperature,
         device=device,
+        reduction=reduction,
     )
     return ClaspPotential(
         cleavage,

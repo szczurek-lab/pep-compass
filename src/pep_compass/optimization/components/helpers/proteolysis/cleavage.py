@@ -153,6 +153,16 @@ class CleavagePotential(MutationPotential):
     Larger :math:`\Phi_{cleav}` means more susceptible (less stable). The
     matrices are MEROPS ``matrices_logprob.npy`` log-probabilities, so
     :math:`e^{M_\pi[p,a]}` is a residue probability.
+
+    The ``reduction`` argument controls how the per-bond, per-protease scores
+    collapse to one number (the panel weighted sum shown above is the default):
+
+    * ``"sum"`` -- weighted sum over the whole panel (original behaviour).
+    * ``"max_protease"`` -- only the single dominant protease
+      :math:`\max_\pi \rho_\pi(\cdot)`, i.e. the most aggressive enzyme rather
+      than the summed panel; bonds are still combined per ``variant``.
+    * ``"max_cut"`` -- the single most-likely cut event,
+      :math:`\max_\pi \max_b \rho_\pi R(\pi, b)`.
     """
 
     def __init__(
@@ -163,6 +173,7 @@ class CleavagePotential(MutationPotential):
         background: torch.Tensor | Sequence[float] | None = None,
         temperature: float = 1.0,
         device: str | torch.device = "cpu",
+        reduction: str = "sum",
     ):
         """Initialize the cleavage potential from a protease panel.
 
@@ -175,13 +186,31 @@ class CleavagePotential(MutationPotential):
         :param temperature: Softmax temperature :math:`\\tau` for the mean-field
             variant.
         :param device: Device for computation.
-        :raises ValueError: If ``variant`` is unsupported.
+        :param reduction: How to aggregate the per-bond, per-protease scores
+            into a single susceptibility. One of:
+
+            * ``"sum"`` (default) -- weighted sum over the whole panel,
+              :math:`\\sum_\\pi \\rho_\\pi(\\cdot)`, with bonds combined as the
+              ``variant`` dictates. This is the original panel-wide behaviour.
+            * ``"max_protease"`` -- keep only the single dominant protease,
+              :math:`\\max_\\pi \\rho_\\pi(\\cdot)`, so susceptibility is set by
+              the most aggressive enzyme; bonds are still combined per
+              ``variant``.
+            * ``"max_cut"`` -- the single most-likely cut event: maximum over
+              both proteases and bonds, :math:`\\max_\\pi \\max_b \\rho_\\pi
+              R(\\pi, b)`. This overrides the variant's over-bond aggregation.
+        :raises ValueError: If ``variant`` or ``reduction`` is unsupported.
         """
         if variant not in {"additive", "product", "meanfield"}:
             raise ValueError(
                 "variant must be 'additive', 'product', or 'meanfield'"
             )
+        if reduction not in {"sum", "max_protease", "max_cut"}:
+            raise ValueError(
+                "reduction must be 'sum', 'max_protease', or 'max_cut'"
+            )
         self.variant = variant
+        self.reduction = reduction
         self.alphabet = alphabet or DEFAULT_ALPHABET
         self.device = torch.device(device)
         self.temperature = float(temperature)
@@ -251,29 +280,50 @@ class CleavagePotential(MutationPotential):
             )
             bond_rate = subsite_factor.prod(dim=2)  # (B, Nb, N)
             bond_rate = bond_rate * bond_valid.unsqueeze(-1)
-            per_protease = bond_rate.sum(dim=1)  # (B, N)
-            total_rate = (per_protease * self.weights).sum(dim=1)  # (B,)
+            if self.reduction == "max_cut":
+                # Single strongest cut: max over bonds (invalid bonds are 0).
+                per_protease = bond_rate.max(dim=1).values  # (B, N)
+            else:
+                per_protease = bond_rate.sum(dim=1)  # (B, N)
+            total_rate = self._reduce_over_panel(per_protease)  # (B,)
             return torch.log(total_rate.clamp_min(1e-12))
 
         # Additive and mean-field share the expected within-window log-score.
         subsite_term = torch.einsum("bnpa,mpa->bnpm", windows, self.matrices)
         bond_score = subsite_term.sum(dim=2)  # (B, Nb, N) = E[s_pi(b)]
-
-        if self.variant == "additive":
-            bond_score = bond_score * bond_valid.unsqueeze(-1)
-            per_protease = bond_score.sum(dim=1)  # (B, N)
-            return (per_protease * self.weights).sum(dim=1)
-
-        # Mean-field: soft maximum over bonds per protease.
-        masked = torch.where(
+        masked_bonds = torch.where(
             bond_valid.unsqueeze(-1),
             bond_score,
             torch.full_like(bond_score, float("-inf")),
         )
-        soft_max = self.temperature * torch.logsumexp(
-            masked / self.temperature, dim=1
-        )  # (B, N)
-        return (soft_max * self.weights).sum(dim=1)
+
+        if self.reduction == "max_cut":
+            # Single strongest cut: hard max over bonds regardless of variant.
+            per_protease = masked_bonds.max(dim=1).values  # (B, N)
+        elif self.variant == "additive":
+            per_protease = (bond_score * bond_valid.unsqueeze(-1)).sum(dim=1)
+        else:
+            # Mean-field: soft maximum over bonds per protease.
+            per_protease = self.temperature * torch.logsumexp(
+                masked_bonds / self.temperature, dim=1
+            )  # (B, N)
+        return self._reduce_over_panel(per_protease)
+
+    def _reduce_over_panel(self, per_protease: torch.Tensor) -> torch.Tensor:
+        r"""Aggregate weighted per-protease scores into one value per sequence.
+
+        ``"sum"`` returns the weighted panel sum
+        :math:`\sum_\pi \rho_\pi(\cdot)`; ``"max_protease"`` and ``"max_cut"``
+        return the single dominant weighted protease
+        :math:`\max_\pi \rho_\pi(\cdot)`.
+
+        :param per_protease: Per-protease scores, shape ``(B, N)``.
+        :return: Aggregated score per sequence, shape ``(B,)``.
+        """
+        weighted = per_protease * self.weights  # (B, N)
+        if self.reduction == "sum":
+            return weighted.sum(dim=1)
+        return weighted.max(dim=1).values
 
     def _sequences_to_distributions(
         self, sequences: Sequence[str]
