@@ -13,6 +13,10 @@ with MEROPS proteolytic-cleavage stability, `-(log2 MIC + lambda * Phi_cleav)`).
   the human serum/plasma protease panel (MEROPS dataset id 35).
 - `clasp_controls_figures.ipynb` -- control figures relating APEX `log2 MIC`
   activity to cleavage stability across the panel.
+- `clasp_cleavage_reduction_scale.ipynb` -- compares the three `CleavagePotential`
+  reductions (`sum`, `max_protease`, `max_cut`) on DBAASP peptides, showing how
+  the panel-wide `sum` differs in scale (and ranking) from the single-protease /
+  single-cut `max_*` modes.
 
 ## Dependencies
 
