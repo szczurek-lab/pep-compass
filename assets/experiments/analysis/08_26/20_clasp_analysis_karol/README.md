@@ -3,6 +3,22 @@
 Inspection and control figures for the CLASP objective (APEX activity combined
 with MEROPS proteolytic-cleavage stability, `-(log2 MIC + lambda * Phi_cleav)`).
 
+
+## Max remarks
+
+### Kolejność:
+0.1 `clasp_dbaasp_inspection.ipynb`
+  - bazowa analiza, sprawdzająca relacje pomiędzy aktywnością, stabilnością, podatnością na cięcie 
+  - sprawdzenie, jak wygląda rozkład podatności na cięcie oraz czy aktywność i stabilność są ze sobą powiązane. 
+0.2 `clasp_controls_figures.ipynb`
+  - analiza względem źródeł literaturowych, oraz sprwadzanie jak mutacja zwiększa / zmniejsza stabilność 
+0.3 `0_03_clasp_dbaasp_serum_inspection.ipynb`
+  - sprawdzamy tutaj aktywność względem 
+0.4 `0_04_clasp_cleavage_reduction_scale.ipynb`
+  - sprawdza, jak sposób agregowania proteaz i wiązań wpływa na skalę oraz ranking
+
+
+
 ## Notebooks (`notebooks/`)
 
 - `clasp_dbaasp_inspection.ipynb` -- inspects the cleavage potential
