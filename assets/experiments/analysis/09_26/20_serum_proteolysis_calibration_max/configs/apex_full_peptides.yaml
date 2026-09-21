@@ -1,0 +1,8 @@
+# Batch APEX evaluation for the complete peptide corpus.
+# Paths are resolved relative to the repository root passed to the command.
+input_csv: data/peptides_data/peptides_raw/peptides.csv
+output_csv: data/peptides_data/peptides_mic/peptides_apex.csv
+sequence_column: sequence
+model: full
+device: cpu
+batch_size: 3000

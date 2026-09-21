@@ -217,11 +217,11 @@ results/
 # dev dir
 dev/
 
-# data (ignore contents; allow tracked placeholders / curated matrices)
+# Local input data and generated artifacts are not versioned.
 data/*
-!data/.gitkeep
-!data/blosum_matrix/
-!data/blosum_matrix/**
+
+# Generated experiment outputs remain local and reproducible.
+experiments/results/
 
 # Trash
 logs/

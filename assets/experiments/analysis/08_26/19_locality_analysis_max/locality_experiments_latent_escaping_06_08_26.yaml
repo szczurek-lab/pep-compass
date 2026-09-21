@@ -8,7 +8,7 @@ experiment:
     # - FLYKWWIRIGRLKL
     # repetitions: 1
     csv:
-      path: assets/peptides_data/peptides_base.csv
+      path: data/peptides_data/peptides_raw/peptides_base.csv
       sequence_column: sequence
         
   grid:
