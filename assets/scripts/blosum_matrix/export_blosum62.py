@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export the official NCBI BLOSUM62 matrix (via BioPython) to results/blosum_matrix."""
+"""Export the official NCBI BLOSUM62 matrix to data/peptides_data/blosum_matrix."""
 
 from __future__ import annotations
 

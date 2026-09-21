@@ -10,7 +10,7 @@ REPO_ROOT = SCRIPTS_DIR.parents[2]
 PACKAGE_ROOT = REPO_ROOT / "assets" / "tools" / "blosum_matrix"
 PACKAGE_SRC = PACKAGE_ROOT / "src"
 
-DEFAULT_OUT_DIR = REPO_ROOT / "results" / "blosum_matrix"
+DEFAULT_OUT_DIR = REPO_ROOT / "data" / "peptides_data" / "blosum_matrix"
 DEFAULT_BLOCKS_DIR = REPO_ROOT / "data" / "hydramp" / "dbaasp" / "blosum_blocks"
 DEFAULT_BLOCKS_GLOB = "len_*.fasta"
 

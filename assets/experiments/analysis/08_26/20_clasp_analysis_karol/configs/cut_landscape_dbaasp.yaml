@@ -1,0 +1,10 @@
+# APEX MIC for every possible contiguous fragment of every dbASP parent.
+input_csv: data/peptides_data/peptides_raw/peptides.csv
+output_csv: data/peptides_data/peptides_mic/dbaasp_fragments_mic.csv
+sequence_column: sequence
+dataset_column: dataset
+dataset_filter: hydramp_dbaasp_clean
+model: full
+device: cpu
+batch_size: 512
+resume: true

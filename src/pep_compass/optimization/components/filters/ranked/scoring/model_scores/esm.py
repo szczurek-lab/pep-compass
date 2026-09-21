@@ -55,7 +55,8 @@ class ESM2PPLScorer(ScoreFunction):
             import esm
         except ImportError as exc:
             raise ImportError(
-                "ESM package not found. Install with: uv pip install fair-esm"
+                "ESM package not found. Install project dependencies with: "
+                "uv sync --extra cpu (or a supported CUDA extra)"
             ) from exc
 
         self.model_name = model_name

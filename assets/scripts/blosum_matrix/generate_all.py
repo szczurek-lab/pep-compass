@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate all matrices under results/blosum_matrix."""
+"""Regenerate all matrices under data/peptides_data/blosum_matrix."""
 
 from __future__ import annotations
 

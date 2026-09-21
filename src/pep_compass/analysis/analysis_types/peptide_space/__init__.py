@@ -2,7 +2,7 @@
 
 Unlike ``analysis_types.locality``, this does not operate on
 ``ExperimentSelection``/experiment run output -- it works directly from the
-raw peptide corpus (``assets/peptides_data/peptides.csv``) and a HydrAMP
+raw peptide corpus (``data/peptides_data/peptides_raw/peptides.csv``) and a HydrAMP
 encoder, so it is not wired into ``ExperimentAnalysis``. Import and call
 directly:
 
