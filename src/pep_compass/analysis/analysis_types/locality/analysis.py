@@ -6,6 +6,7 @@ from collections.abc import Callable
 from typing import Any
 
 from pep_compass.analysis.analysis_types.locality.latent_jump import (
+    ambient_jump,
     latent_jump,
     sorbes_trajectory_profile,
 )
@@ -28,7 +29,7 @@ class LocalityAnalysis:
     ) -> AnalysisResult:
         store = self.selection.reader.metrics
         specification = self.selection.specification()
-        analysis_version = "7"
+        analysis_version = "8"
         if self.use_cache:
             cached = store.get_analysis(
                 name, specification, parameters, analysis_version
@@ -50,6 +51,10 @@ class LocalityAnalysis:
     def latent_jump(self, **parameters: Any) -> AnalysisResult:
         """Relate edit distance to genuine (re-encoded) latent displacement."""
         return self._run("locality.latent_jump", latent_jump, parameters)
+
+    def ambient_jump(self, **parameters: Any) -> AnalysisResult:
+        """Compare latent- vs. ambient-space displacement across HydrAMP conditions."""
+        return self._run("locality.ambient_jump", ambient_jump, parameters)
 
     def sorbes_trajectory_profile(self, **parameters: Any) -> AnalysisResult:
         """Return per-iteration SORBES latent drift from each trajectory origin."""

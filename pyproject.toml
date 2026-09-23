@@ -45,6 +45,8 @@ dependencies = [
   "ipykernel>=7.2.0",
   "typer>=0.27.0",
   "PyYAML>=6.0.2",
+  "openpyxl>=3.1.5",
+  "ijson>=3.3.0",
 ]
 
 [project.scripts]
@@ -83,6 +85,7 @@ cu128 = [
 [dependency-groups]
 dev = [
   "pytest",
+  "nbconvert>=7.16.6",
 ]
 
 [tool.uv]

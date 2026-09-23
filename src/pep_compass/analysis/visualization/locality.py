@@ -204,3 +204,63 @@ class LocalityVisualizer:
         )
         axes.legend(title="seed", loc="upper left", fontsize="small")
         return axes
+
+    def ambient_jump(self, result: AnalysisResult):
+        """Plot latent- vs. ambient-space distance by decode condition, side by side.
+
+        Two panels sharing one y-axis: left is ``latent_distance`` by
+        ``condition`` -- a control, expected to look identical across
+        conditions since HydrAMP's encoder never sees ``c`` -- right is
+        ``ambient_distance`` by ``condition`` for the SAME pairs, which can
+        differ since decoding does depend on ``c``. Putting them side by
+        side on one shared scale makes that contrast directly visible,
+        rather than only asserted from separate summary statistics.
+
+        :param result: Output of ``LocalityAnalysis.ambient_jump`` -- ``data``
+            carries the same candidate pair's ``latent_distance`` and
+            ``ambient_distance`` decoded under every named ``condition``,
+            split by ``distance_kind``.
+        :return: The two-panel ``Axes`` array (``[latent, ambient]``).
+        """
+        data = result.data
+        if data.empty:
+            raise ValueError("Cannot visualize an empty ambient-jump result")
+        labels = {
+            "candidate_to_origin": "candidate -> trajectory origin",
+            "candidate_to_sorbes_parent": "candidate -> generating SORBES point",
+        }
+        plot_data = data.copy()
+        plot_data["distance_kind"] = plot_data["distance_kind"].map(labels)
+
+        with sns.axes_style(self.theme.style), sns.plotting_context(self.theme.context):
+            figure, axes = plt.subplots(
+                1,
+                2,
+                figsize=(self.theme.figure_size[0] * 2.4, self.theme.figure_size[1]),
+                dpi=self.theme.dpi,
+                sharey=True,
+                constrained_layout=True,
+            )
+        panels = (
+            (axes[0], "latent_distance", "Latent distance (control -- should not vary)"),
+            (axes[1], "ambient_distance", "Ambient (decoder-output) distance"),
+        )
+        for panel_axes, column, title in panels:
+            sns.violinplot(
+                data=plot_data,
+                x="condition",
+                y=column,
+                hue="distance_kind",
+                palette=self.theme.palette,
+                cut=0,
+                density_norm="width",
+                ax=panel_axes,
+            )
+            panel_axes.set(
+                title=title,
+                xlabel="default_condition (c_AMP, c_MIC)",
+                ylabel="Euclidean distance",
+            )
+            panel_axes.legend(title="", loc="upper left", fontsize="small")
+        figure.suptitle("Same candidate pairs, decoded under each target condition")
+        return axes

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build AMP-BLOSUM62 from DBAASP length blocks into results/blosum_matrix."""
+"""Build AMP-BLOSUM62 from DBAASP length blocks into data/peptides_data/blosum_matrix."""
 
 from __future__ import annotations
 

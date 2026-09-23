@@ -202,7 +202,7 @@ input:
 ```yaml
 input:
   csv:
-    path: assets/peptides_data/peptides.csv
+    path: data/peptides_data/peptides_raw/peptides.csv
     sequence_column: sequence
     repetitions_column: repetitions
 ```

@@ -1,0 +1,33 @@
+acquisition_root: data/serum_proteolysis_calibration
+sources:
+  uniprot:
+    required: true
+  brenda:
+    required: true
+    release: "2026.1"
+  sabio:
+    required: true
+  peplife2_serum:
+    required: true
+  peplife2_plasma:
+    required: true
+  dramp_stability:
+    required: true
+  hpa_blood_ms:
+    required: true
+  hpa_blood_immunoassay:
+    required: true
+  mmp_pics_pmc:
+    required: true
+  mmp_pics_pride:
+    required: true
+  dpp4_qpisa_pmc:
+    required: true
+  dpp4_qpisa_pride:
+    required: true
+  qmsp_ms:
+    required: true
+  adamts13:
+    required: true
+  serine_microarrays_manual:
+    required: false

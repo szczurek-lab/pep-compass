@@ -51,7 +51,7 @@ uv run python ../../scripts/blosum_matrix/export_blosum62.py
 uv run python ../../scripts/blosum_matrix/generate_ampblosum62.py
 ```
 
-Defaults write to `results/blosum_matrix/`.
+Defaults write to `data/peptides_data/blosum_matrix/`.
 
 ## Inputs
 

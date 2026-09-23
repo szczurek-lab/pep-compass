@@ -1,0 +1,6 @@
+ec_number	merops_code	protein_name	source
+3.4.21.19	S01.269	glutamyl endopeptidase (V8/SspA), Staphylococcus aureus	assets/experiments/analysis/09_26/20_serum_proteolysis_calibration_max/configs/clasp-controls.tsv
+3.4.24.26	M04.005	pseudolysin (LasB), Pseudomonas aeruginosa	assets/experiments/analysis/09_26/20_serum_proteolysis_calibration_max/configs/clasp-controls.tsv
+3.4.24.29	M04.009	aureolysin, Staphylococcus aureus	assets/experiments/analysis/09_26/20_serum_proteolysis_calibration_max/configs/clasp-controls.tsv
+3.4.24.30	M04.007	coccolysin (GelE), Enterococcus faecalis	assets/experiments/analysis/09_26/20_serum_proteolysis_calibration_max/configs/clasp-controls.tsv
+3.4.23.49	A26.001	omptin (OmpT), Escherichia coli	assets/experiments/analysis/09_26/20_serum_proteolysis_calibration_max/configs/clasp-controls.tsv

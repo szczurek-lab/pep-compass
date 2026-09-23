@@ -456,7 +456,7 @@ Extend these tests when introducing another manager or operation family.
 Add or extend a small file in `assets/experiments/configs/validation/`. Each
 file should isolate one component family and use a grid for comparable
 methods or parameters. Use the mock sequence CSV under
-`assets/peptides_data/`. Validate before a full run:
+`data/peptides_data/`. Validate before a full run:
 
 ```bash
 uv run --extra <cpu-or-cuda-extra> pep-compass dry-run \

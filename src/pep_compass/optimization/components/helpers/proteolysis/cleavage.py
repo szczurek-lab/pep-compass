@@ -433,6 +433,52 @@ class CleavagePotential(MutationPotential):
         ]
 
     @torch.no_grad()
+    def sequence_bond_protease_rates(
+        self, sequences: Sequence[str]
+    ) -> tuple[list[np.ndarray], list[str]]:
+        r"""Return local MEROPS values for every bond and protease.
+
+        For ``product`` each array contains unweighted ``R_(pi,b)`` values;
+        other variants return their corresponding local expected scores.
+        Arrays have shape ``(number_of_bonds, number_of_proteases)``.
+
+        :param sequences: Peptide strings.
+        :return: Per-sequence arrays and matching protease codes.
+        """
+        if not sequences:
+            return [], list(self.codes)
+        distributions, lengths = self._sequences_to_distributions(sequences)
+        batch, grid, _ = distributions.shape
+        n_bonds = max(grid - 1, 0)
+        if n_bonds == 0:
+            empty = [np.zeros((0, self.matrices.shape[0])) for _ in sequences]
+            return empty, list(self.codes)
+        bond_index = torch.arange(n_bonds, device=self.device)
+        positions = bond_index.unsqueeze(1) + self.subsite_offsets.unsqueeze(0)
+        clamped = positions.clamp(0, grid - 1)
+        windows = distributions[:, clamped, :]
+        subsite_valid = (positions.unsqueeze(0) >= 0) & (
+            positions.unsqueeze(0) < lengths.view(batch, 1, 1)
+        )
+        windows = torch.where(
+            subsite_valid.unsqueeze(-1), windows, self.background
+        )
+        bond_valid = (bond_index.unsqueeze(0) + 1) < lengths.view(batch, 1)
+        if self.variant == "product":
+            subsite_factor = torch.einsum(
+                "bnpa,mpa->bnpm", windows, self.exp_matrices
+            )
+            values = subsite_factor.prod(dim=2)  # (B, Nb, N)
+        else:
+            subsite_term = torch.einsum("bnpa,mpa->bnpm", windows, self.matrices)
+            values = subsite_term.sum(dim=2)  # (B, Nb, N)
+        values = values * bond_valid.unsqueeze(-1)
+        values_np = values.detach().cpu().numpy().astype(np.float64)
+        return [values_np[i, : max(int(lengths[i]), 0) - 1] for i in range(batch)], list(
+            self.codes
+        )
+
+    @torch.no_grad()
     def sequence_protease_rates(
         self, sequences: Sequence[str]
     ) -> tuple[np.ndarray, list[str]]:
