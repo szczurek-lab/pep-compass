@@ -345,9 +345,9 @@ for link 1 of the chain.
 | Source | Accession or link | What it gave |
 | --- | --- | --- |
 | MMP PICS | PRIDE `PXD002265`, <https://www.ebi.ac.uk/pride/archive/projects/PXD002265> | proteome-derived cleavage sites for matrix metalloproteinases, audited in `0_05` |
-| DPP4 qPISA | PRIDE `PXD042089` and PMC `PMC11612144` | quantitative subsite preference for DPP4, audited in `0_04`, used as the external check in `1_02` |
-| PepLife2 | <https://webs.iiitd.edu.in/raghava/peplife2/> | peptide serum half-lives, audited in `0_06` |
-| DRAMP stability | <https://dramp.cpu-bioinfor.org/> (`stability_amps.xlsx`) | stability annotations for antimicrobial peptides, audited in `0_06` |
+| DPP4 qPISA | PRIDE `PXD042089` and PMC `PMC11612144` | quantitative turnover of 43 314 peptides under DPP4, audited in `0_06`, used as the external check in `1_02` and as the benchmark for the window score |
+| PepLife2 | <https://webs.iiitd.edu.in/raghava/peplife2/> | peptide serum half-lives, audited in `0_12` |
+| DRAMP stability | <https://dramp.cpu-bioinfor.org/> (`stability_amps.xlsx`) | stability annotations for antimicrobial peptides, audited in `0_12` |
 | SABIO-RK | <https://sabiork.h-its.org/> | **not retrievable**; the directory is empty and the state is recorded as a blocker |
 
 Two further sources named in the specification — the qMSP-MS tables and the
@@ -617,7 +617,7 @@ while recording the mutant flag and the compartment so that a later analysis can
 them, and to treat single-laboratory datasets such as qPISA as the only route that
 would change the answer.
 
-#### `0_04` and `0_05` — the independent sources, compared on one template
+#### `0_05` and `0_06` — the independent sources, compared on one template
 
 These two notebooks are generated from a **single template**, so that datasets
 measured by different methods can be read off the same axes. Each answers the same
@@ -634,23 +634,47 @@ between two formats. Subsites an assay cannot resolve are reported as unobserved
 rather than scored, because comparing an unobserved subsite compares the prior with
 itself and returns perfect agreement from no data.
 
-##### `0_04` — DPP4 qPISA
+##### `0_06` — DPP4 qPISA
 
 **The problem it addresses.** MEROPS records **29** cleavages for DPP4 — roughly
 one observation per five cells of an 8 × 20 matrix — so the matrix shape is
-dominated by the prior and by whichever substrates happened to be studied.
+dominated by the prior and by whichever substrates happened to be studied. qPISA
+is the only dataset in this analysis that measures, quantitatively and per peptide,
+how strongly a named human peptidase acts on tens of thousands of sequences, which
+makes it the only place the window score can be tested against a measurement rather
+than against another tally.
 
-**How the experiment is done.** A proteome digest is incubated with human DPP4 and
-compared against a matched no-enzyme control; the readout is the log2 change in
-abundance of each peptide. **53 499** peptides are quantified; the most depleted
-decile is taken as the cleaved set, with the least depleted decile carried as the
-contrast. The substrate sequence is explicit for every observation and the cleavage
-site needs no inference: DPP4 is a dipeptidyl-peptidase whose event is by definition
-the removal of the N-terminal dipeptide.
+**How the experiment is done.** A commercial tryptic HeLa digest (Pierce 88329) is
+split in two; one half receives 0.5 µg recombinant hDPP4 and the other buffer only,
+both at **21 °C, pH 7.4, for 4 h**. After heat inactivation both are TMT-labelled,
+pooled, and quantified on an Orbitrap Fusion Lumos using SPS-MS3. The deposited
+levels are $\log_2$-transformed and mean-centred, so the difference between the
+control and the treated channel **is** the $\log_2$ fold change, and a positive
+value means the peptide was consumed.
 
-**What it costs.** That geometry places the cut after residue 2, so nothing lies
+Crucially, the readout is the **disappearance of the substrate**, not the
+appearance of the product. The authors argue this explicitly against PICS and the
+other product-detection methods: a product has no baseline in the control, so its
+abundance cannot be related to anything, and the analysis is forced into a binary
+product/non-product classifier that discards how much was cleaved. An input peptide
+is present in both channels, so its fold change cancels the composition of the HeLa
+proteome, the K/R depletion left by trypsin, and the peptide's own detectability in
+the spectrometer.
+
+**How the dataset is divided.** Of **53 499** quantified peptides, **43 314
+(80.96%)** are labelled `Tryptic+` — these are the assay's input, the substrates —
+and **10 185 (19.04%)** are `Non-Tryptic+`, the products of DPP4 cleavage. The
+split is verified rather than assumed: input peptides deplete or stay flat, products
+accumulate (median turnover $-0.161$). `0_06` analyses **all 43 314 substrates**;
+no peptide is excluded for length or composition, because none needs to be, and
+**no threshold is applied to the response variable anywhere** except at the single
+point where a countable window tally has to be defined for `0_07` and `0_08`.
+
+**What it costs.** The geometry places the cut after residue 2, so nothing lies
 N-terminal of $P_2$: **$P_4$ and $P_3$ do not exist** and only six of eight subsites
-can be compared.
+can be compared. And the assay is a single 4 h endpoint, so it measures the
+**extent** of turnover and not a rate constant; it constrains the shape of a
+preference and never the scale.
 
 ##### `0_05` — MMP PICS
 
@@ -673,57 +697,103 @@ composition is not part of the deposit.
 | | qPISA | PICS |
 | --- | --- | --- |
 | proteases | 1 | 9 |
-| distinct windows | 5 095 | 3 636 |
-| median windows per MEROPS cleavage | **175.7** | 1.6 |
+| peptides quantified | **43 314** substrates (of 53 499 deposited) | — |
+| distinct cleavage windows | 4 781 | 3 636 |
+| windows per MEROPS cleavage | **164.9** | 1.6 |
 | subsites resolved | 6 of 8 | 8 of 8 |
-| measurement type | depletion against control | occurrence count |
+| measurement type | **quantitative turnover of every substrate** | occurrence count |
+| own background available | yes — the unchanged substrates | no |
+| supports a per-peptide prediction test | **yes** | no |
+
+The last two rows are what separate the two sources, and they matter more than the
+size. PICS reports which bonds were cut; qPISA reports, for every peptide in the
+library, how much of it disappeared, *and* carries the library itself as the
+background against which that number must be read. Only the second kind of dataset
+can be used to ask whether a score predicts anything.
 
 ##### Findings and decisions
 
-**Agreement with MEROPS tracks the measurement type, not the amount of evidence.**
-This is the result of `0_11` and it is the most consequential thing the source
-audits produced.
+**The paper's model is reproduced, which is what licenses everything below.**
+Refitting the three model forms of Gudipati et al on the deposited measurements
+gives adjusted $R^2$ of **60.1%**, **62.6%** and **72.0%** against their published
+60.7%, 63.1% and 72.7% — within 0.7 percentage points on all three. The independent
+reconstruction of their fitted parameters (Dataset EV2) orders the GLP-1 (7-37)
+engineering variants exactly as their in vitro assay did: HAE $+2.169$ (fully
+processed), DAE $+0.984$ (reduced), HAP $-0.202$ and DAP $-1.388$ (abolished). Any
+statement made here about MEROPS is made against a correctly reconstructed
+benchmark, not against a number taken on trust.
 
-| Source | median rank agreement | median divergence (bits) | top residue agrees |
+**The window score explains 11% of measured turnover; its own $P_1$ column
+explains 31%.** Out of sample, on all 43 314 substrate peptides, under one
+$5$-fold split and one metric:
+
+| Score | parameters fitted here | Spearman | out-of-sample $R^2$ |
 | --- | --- | --- | --- |
-| PICS | 0.62 – 0.81 per subsite | 0.05 – 0.09 | 36 of 72 (50%) |
-| qPISA | 0.04 – 0.55 per subsite | 0.10 – 0.25 | 1 of 6 (17%) |
+| null (intercept only) | 0 | 0.000 | 0.000 |
+| peptide length | 0 | 0.021 | 0.000 |
+| **MEROPS masked window score (deployed)** | 0 | 0.181 | **0.107** |
+| **MEROPS $P_1$ column alone** | 0 | 0.207 | **0.312** |
+| refit: $P_1$ only | 19 | 0.448 | 0.601 |
+| refit: $P_2 + P_1 + P_1'$ additive | 57 | 0.457 | 0.626 |
+| refit: the paper's form with both interactions | 841 | 0.507 | **0.714** |
+| qPISA published model (EV2), in-sample ceiling | — | 0.473 | 0.724 |
 
-PICS contributes 1.6 windows per MEROPS cleavage and agrees closely. qPISA
-contributes **176** per cleavage — two orders of magnitude more — and agrees much
-less, with $P_3'$ at 0.04 and $P_4'$ at 0.11. Plotting agreement against evidence
-ratio across all ten proteases gives no positive trend.
+The score is real rather than noise — it sits **38 null standard deviations**
+outside a permutation null, and the tenth of peptides it ranks highest holds 36.5%
+of all strongly cleaved peptides against 10% by chance. It is also small: the same
+peptides' sequences support $R^2 = 0.714$ under a model that is fitted, so the
+deployed score recovers roughly **one seventh** of the locally available signal.
 
-**Neither figure is a single number, and the distribution behind each is shown.**
-A source profiling nine proteases yields nine comparisons per subsite and one
-profiling a single enzyme yields one, so both notebooks report three layers
-instead: a bootstrap over the source's own windows, the source's own strata as
-points, and the pooled value as a dash. For qPISA the band is narrow — rank
-agreement at $P_1'$ between 0.51 and 0.59 across resamples — so its low agreement
-is a property of the data and not of the sample size, and at $P_3'$ the band
-straddles zero. Its strata run from the least to the most depleted fifth of the
-cleaved set and show no rising trend, which rules out the explanation that MEROPS
-records only the strongly cleaved sites. For PICS the two peptide libraries differ
-by 0.05 to 0.12 per subsite, inside the band, so library composition is not driving
-its agreement either.
+**Every subsite added after $P_1$ makes the prediction worse.** $P_1$ alone reaches
+$R^2 = 0.312$; adding $P_1'$ gives 0.215, adding $P_2$ 0.134, and the full
+six-subsite window 0.086. Leave-one-out from the deployed score confirms the
+direction — deleting $P_2$ ($+0.023$), $P_4'$ ($+0.018$) or $P_3'$ ($+0.014$) each
+*improves* it, while deleting $P_1$ leaves 0.002, that is nothing. The non-$P_1$
+columns of this matrix rest on 20 cleavages spread over 20 residues; they are not
+weak evidence being diluted, they enter the sum with full weight and point the
+wrong way.
 
-The explanation is what each source measures. PICS and MEROPS both count
-**occurrences of a cleavage**; qPISA measures **how much of a peptide disappeared**,
-which is nearer to a rate. A MEROPS matrix therefore reproduces well what another
-occurrence-counting experiment finds and reproduces poorly what a
-depletion-weighted experiment finds.
+**MEROPS recovers the direction at $P_1$ once the library is accounted for, and
+not before.** The measured ranking is Pro > Ala > Ser > Thr > Gly, which the
+paper's fitted term reproduces exactly. A raw tally of qPISA cleavage windows puts
+**Ala** first and so appears to contradict MEROPS — but Ala is 1.9× more common
+than Pro at that position in the HeLa digest to begin with. Dividing by the library
+restores Pro to first place, in agreement with MEROPS, and raises the rank
+agreement at $P_1$ from 0.365 to 0.420. **The disagreement was the analysis, not
+the database.** What MEROPS does get wrong is the magnitude and the tail: Ala
+reaches 79% of Pro in the measurement and 86% in the fitted model, against **24%**
+in MEROPS, and MEROPS ranks Cys and Trp — with one and zero recorded cleavages —
+above Ala, because the log-odds divides by a small proteome background frequency
+and rewards a residue for being rare.
 
-**That is a statement about the project, not about these two datasets.** The window
-score is built from occurrence counts and the calibration wants to predict a rate.
-At the one place where the two kinds of measurement can be compared directly they
-disagree, which is consistent with the `2_` series reaching a pooled within-protease
-correlation of 0.36 with only two proteases surviving held-out validation, and it
-locates the reason in the evidence rather than in the fitting.
+**MEROPS cannot express inhibition, and that is structural.** Proline at $P_1'$ is
+the largest negative term in the paper's model. In the raw measurements it removes
+**3.37 $\log_2$ units** of turnover from peptides that carry the best possible
+$P_1$: Pro-Pro peptides sit at $-0.082$ against $+3.286$ for Pro-anything-else,
+which is cleavage abolished, not reduced. MEROPS places Pro at the floor of its
+$P_1'$ column — but that floor is shared with every other residue it never
+observed, and the whole column spans 2.849 nats, narrower than the effect it would
+have to carry. Summed additively, MEROPS scores a Pro-Pro peptide at $+2.192 - 1.333
+= +0.860$ nats, still favourable. A tally of cleavages that *were* observed has no
+channel for a residue that *prevents* cleavage, and no quantity of additional
+literature would give it one.
+
+**What this does and does not say about the earlier conclusion.** The previous
+version of this audit reported qPISA as disagreeing with MEROPS far more than PICS
+does, and read that as evidence that occurrence counts reproduce occurrence counts
+but not rates. The first half of that reading does not survive: a large part of the
+apparent disagreement was the library composition entering an occurrence tally
+uncorrected, plus roughly 11% of the tallied windows being product peptides rather
+than substrates. The second half survives and is now measured rather than inferred:
+a score built from occurrence counts recovers 0.107 of a quantity that sequence
+alone supports to 0.714, and the gap is concentrated in exactly the places a tally
+cannot represent — magnitudes, and negative effects.
 
 **Practical consequence.** An independent source is worth acquiring for the *kind*
 of measurement it makes, not for its size. Another proteome-scale occurrence dataset
-would mostly restate MEROPS; a dataset weighting cleavages by how much substrate was
-consumed would not.
+would mostly restate MEROPS. A dataset that measures how much substrate was
+consumed, and that carries its own background, does something no tally can: it
+turns "does this score mean anything" into a number.
 
 #### `0_06` — serum half-lives, and why plasma is kept out of serum
 
@@ -1586,6 +1656,31 @@ These are recorded here, where the method is read, rather than in a separate fil
    exopeptidase trimming as a ladder and finds it competitive with internal
    cleavage, but whether exopeptidase events actually fire in the `4_01` and `4_02`
    simulations, and how often, has not been measured.
+12. **The window score is diluted by its own subsites, and this is measured only
+   for DPP4.** `0_06` finds the deployed six-subsite score reaching $R^2 = 0.107$
+   against measured turnover while its $P_1$ column alone reaches 0.312, with every
+   added subsite costing accuracy. The score is deployed at full width everywhere
+   in the `3_` and `4_` series. Whether the same dilution holds for the other 54
+   panel proteases cannot be checked, because no comparable measurement exists for
+   them — but every one of them has the same problem in its evidence, most of them
+   worse: the panel median is 20 cleavages spread over an 8 × 20 matrix, against
+   DPP4's 29.
+13. **The score cannot represent a residue that blocks cleavage.** `0_06` measures
+   $P_1' =$ Pro removing 3.37 $\log_2$ units of turnover, abolishing cleavage of
+   otherwise ideal substrates, and shows that the MEROPS additive score still rates
+   such a peptide favourable because its entire $P_1'$ column spans 2.849 nats and
+   an unobserved residue is indistinguishable from an inhibitory one. This is a
+   property of tallying observed cleavages and applies to every protease in the
+   panel. Nothing downstream corrects for it, so any peptide whose resistance comes
+   from an inhibitory residue rather than from a poor $P_1$ is scored as cleavable.
+14. **The window tally exported to `0_08` still carries the confound `0_06`
+   measures.** `0_06` shows that an occurrence tally of qPISA windows inverts the
+   $P_1$ ranking unless it is divided by the peptide library, and it reports both
+   variants. But the file `0_08` consumes to build the extended cleavage
+   environment is the **uncorrected** one, because pooling counts into MEROPS
+   counts is what `0_08` does and an enrichment is not a count. The extended
+   environment therefore inherits the HeLa digest's composition at every subsite it
+   gained from qPISA.
 
 ## Contents
 
@@ -1605,7 +1700,7 @@ series ends with the datasets themselves, not with a verdict.
 | `0_03_serum_peptidase_abundance.ipynb` | How much of each circulates, mass spectrometry against immunoassay, and why an abundance is a prior and not a concentration | `0_03_hpa_abundance_coverage.csv`, `0_03_hpa_abundance_per_protease.csv` |
 | `0_04_merops_through_serum_classes.ipynb` | Whether matrix quality depends on catalytic family, geometry or circulating amount, and which peptidases cannot be carried forward | `0_04_class_quality.csv`, `0_04_rejections.csv`, `0_04_class_tests.csv` |
 | `0_05_source_mmp_pics.ipynb` | The PICS dataset on its own terms, against the MEROPS matrices of the same nine metallopeptidases, with a bootstrap band and the two peptide libraries as strata | `0_05_dataset.csv`, `0_05_intersection.csv`, `0_05_profile_agreement.csv`, `0_05_profile_agreement_strata.csv`, `0_05_profile_agreement_bootstrap.csv`, `0_05_contribution.csv` |
-| `0_06_source_dpp4_qpisa.ipynb` | The qPISA dataset on the same template, against the MEROPS matrix of DPP4, with a bootstrap band and depletion strength as strata | `0_06_dataset.csv`, `0_06_intersection.csv`, `0_06_profile_agreement.csv`, `0_06_profile_agreement_strata.csv`, `0_06_profile_agreement_bootstrap.csv`, `0_06_contribution.csv` |
+| `0_06_source_dpp4_qpisa.ipynb` | All 43 314 measured DPP4 substrates: reproduction of the paper's positional effects, whether MEROPS recovers them, how much measured turnover the masked window score explains, and a like-for-like benchmark against the paper's own regression | `0_06_funnel.csv`, `0_06_discrimination.csv`, `0_06_p1_effects.csv`, `0_06_p1prime_inhibition.csv`, `0_06_subsite_single.csv`, `0_06_subsite_cumulative.csv`, `0_06_subsite_leave_one_out.csv`, `0_06_benchmark.csv`, `0_06_scored_peptides.csv`, `0_06_windows.csv`, `0_06_profile_agreement.csv`, `0_06_profile_agreement_corrected.csv`, `0_06_intersection.csv` |
 | `0_07_sources_against_merops.ipynb` | The two independent sources on one set of axes: how much evidence each adds against how far each agrees, with one comparison worked through by hand | `0_07_source_comparison.csv` |
 | `0_08_merops_baseline_vs_extended.ipynb` | Folds the independent windows into the MEROPS counts and measures the change at three levels: the matrix, the bond ranking, and the bond the model nominates | `0_08_matrix_shift.csv`, `0_08_score_shift.csv`, `0_08_information_gain.csv` |
 | `0_09_brenda_kinetics.ipynb` | BRENDA on its own, with no relation to MEROPS: what is quantitative, what is sequence-resolved, what is window-resolved | `0_09_brenda_coverage.csv` |
