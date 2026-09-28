@@ -207,7 +207,6 @@ class CSVObserver(AbstractObserver):
 
 
 black_box = BattleAMPBlackBox(device=DEVICE)
-# x0 = np.array([['H', 'C', 'L', 'G', 'S', 'H', 'C', 'W', 'M', 'K']], dtype='<U1')
 
 observer = CSVObserver(maximize=False)
 black_box.set_observer(observer)

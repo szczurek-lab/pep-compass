@@ -1,13 +1,13 @@
 
 import numpy as np
 import torch
-from poli_baselines.core.abstract_solver import AbstractBlackBox
+from poli.core.abstract_black_box import AbstractBlackBox
 from poli.core.black_box_information import BlackBoxInformation
-import torch.nn.functional as F
-from einops import rearrange
 
 from pep_compass.models.apex.APEX_predictor import PredictorAPEX
-from pep_compass.models.encoder_decoder.hydramp_encoder_decoder import HydrAMPEncoderDecoder
+from pep_compass.models.encoder_decoder.hydramp_encoder_decoder import \
+    HydrAMPEncoderDecoder
+
 
 class APEXBlackBox(AbstractBlackBox):
     def __init__(

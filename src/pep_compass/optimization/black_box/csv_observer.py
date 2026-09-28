@@ -42,7 +42,6 @@ class CSVObserver(AbstractObserver):
         caller_info: CSVObserverInitInfo | dict,
         seed: int,
         encoder_decoder: HydrAMPEncoderDecoder | None = None,
-       
     ) -> object:
         """
         Initializes the observer with the given information.

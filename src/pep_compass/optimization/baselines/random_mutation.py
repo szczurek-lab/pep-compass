@@ -1,6 +1,10 @@
 import numpy as np
 from poli_baselines.solvers.simple.random_mutation import RandomMutation
+from poli.core.abstract_black_box import AbstractBlackBox
 
+
+
+from pep_compass.optimization.black_box.negative_black_box import NegativeBlackBox
 from pep_compass.optimization.optimizer import AbstractOptimizer
 from pep_compass.utils.utils import set_seed
 
@@ -9,8 +13,11 @@ class RandomMutationOptimizer(AbstractOptimizer):
     
     def __init__(
         self,
-        black_box,
+        black_box: AbstractBlackBox,
     ):
+        if not black_box.maximize:
+            black_box = NegativeBlackBox(black_box)
+
         super().__init__(black_box)
     
     def optimize(

@@ -229,7 +229,7 @@ src/pep_compass/models/hydramp/weights/
 # data
 data/
 
-# Karol's trash
+# Trash
 scripts/first_mic_trials.ipynb
 analysis/notebooks/dev/karol_linear.ipynb
 analysis/notebooks/dev/aa_scatters/
