@@ -4,14 +4,20 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from scipy.special import logsumexp
+from scipy.stats import spearmanr
 
 from pep_compass.optimization.components.helpers.proteolysis import (
+    BOND_REDUCTIONS,
     MEROPS_SMOOTHING_ALPHA,
     best_merops_dataset,
+    bootstrap_bond_reduction_rank_stability,
     bootstrap_specificity_matrices,
     cluster_profiles,
     expected_null_information_content,
     information_content_excess,
+    simulate_window_null_divergence,
+    masked_window_score,
     merops_code_locations,
     positional_information_content,
     profile_similarity_matrix,
@@ -213,6 +219,142 @@ class TestNullInformationContent:
 
         _, _, excess = information_content_excess(_deterministic_counts(5, 30), n_samples=200, seed=3)
         assert np.all(excess > 2.0)
+
+
+class TestWindowNull:
+    """A null dataset contains the requested number of cleavage windows."""
+
+    def test_two_residue_windows_have_exact_coverage_and_seeded_output(self) -> None:
+        """One internal bond exposes only P1 and P1p for every event."""
+
+        sizes = np.array([1, 10])
+        first, depths = simulate_window_null_divergence(
+            sizes, np.array([2, 2, 2]), n_replicates=17, seed=9,
+            background=SKEWED_BACKGROUND,
+        )
+        second, repeated_depths = simulate_window_null_divergence(
+            sizes, np.array([2]), n_replicates=17, seed=9,
+            background=SKEWED_BACKGROUND,
+        )
+        assert first.shape == (2, 17)
+        assert depths.shape == (2, 17, N_SUBSITES)
+        assert np.array_equal(first, second)
+        assert np.array_equal(depths, repeated_depths)
+        assert np.array_equal(depths[:, :, 3], np.broadcast_to(sizes[:, None], (2, 17)))
+        assert np.array_equal(depths[:, :, 4], np.broadcast_to(sizes[:, None], (2, 17)))
+        assert np.all(depths[:, :, [0, 1, 2, 5, 6, 7]] == 0)
+        assert np.all(np.isfinite(first))
+
+    def test_window_depths_are_nested_without_projecting_observed_merops_depths(self) -> None:
+        """Every generated window follows the bond geometry and count bounds."""
+
+        sizes = np.array([3, 100])
+        _, depths = simulate_window_null_divergence(
+            sizes, np.array([2, 5, 10, 10]), n_replicates=40, seed=13,
+        )
+        assert np.all(depths <= sizes[:, None, None])
+        assert np.all(np.diff(depths[:, :, [3, 2, 1, 0]], axis=-1) <= 0)
+        assert np.all(np.diff(depths[:, :, [4, 5, 6, 7]], axis=-1) <= 0)
+        assert np.array_equal(depths[:, :, 3], np.broadcast_to(sizes[:, None], (2, 40)))
+        assert np.array_equal(depths[:, :, 4], np.broadcast_to(sizes[:, None], (2, 40)))
+
+    def test_uniform_bond_matches_exact_outer_position_probability(self) -> None:
+        """For length five, only one of four bonds exposes P4 or P4p."""
+
+        _, depths = simulate_window_null_divergence(
+            np.array([1000]), np.array([5]), n_replicates=50, seed=19
+        )
+        assert depths[:, :, 0].mean() / 1000 == pytest.approx(0.25, abs=0.02)
+        assert depths[:, :, 7].mean() / 1000 == pytest.approx(0.25, abs=0.02)
+
+    @pytest.mark.parametrize(
+        ("sizes", "lengths", "replicates"),
+        [([0], [10], 2), ([1.5], [10], 2), ([1], [1], 2), ([1], [10], 0), ([float("inf")], [10], 2)],
+    )
+    def test_invalid_sampling_domain_is_rejected(self, sizes, lengths, replicates) -> None:
+        """Counts and peptide lengths must describe valid cleavage datasets."""
+
+        with pytest.raises(ValueError):
+            simulate_window_null_divergence(
+                np.asarray(sizes), np.asarray(lengths), n_replicates=replicates
+            )
+
+
+class TestBondReductionRankStability:
+    """Ranking reproducibility under the four bond-score reductions."""
+
+    @staticmethod
+    def _example_matrices() -> tuple[np.ndarray, np.ndarray]:
+        """Build deterministic, normalized reference and perturbed matrices."""
+
+        generator = np.random.default_rng(31)
+        raw = generator.uniform(0.5, 2.0, (2, N_SUBSITES, N_AMINO_ACIDS))
+        reference = np.log(raw / raw.sum(axis=-1, keepdims=True))
+        perturbed = np.roll(reference, 1, axis=-1)
+        return reference, np.stack([reference, perturbed])
+
+    def test_scores_and_rank_correlations_match_independent_oracles(self) -> None:
+        """Local masked scores and SciPy Spearman give the same results."""
+
+        sequences = ["ACDE", "VWY", "MLKQ", "CR", "ACDYY"]
+        reference, bootstraps = self._example_matrices()
+        scores, stability = bootstrap_bond_reduction_rank_stability(
+            sequences, reference, bootstraps, background=SKEWED_BACKGROUND
+        )
+        assert BOND_REDUCTIONS == ("max", "sum", "mean", "logsumexp")
+        assert scores.shape == (4, len(sequences), 2)
+        assert stability.shape == (4, 2, 2)
+        for protease in range(2):
+            for peptide_index, peptide in enumerate(sequences):
+                local = np.array([
+                    masked_window_score(peptide, bond, reference[protease], SKEWED_BACKGROUND)[0]
+                    for bond in range(len(peptide) - 1)
+                ])
+                expected = [local.max(), local.sum(), local.mean(), logsumexp(local)]
+                assert np.allclose(scores[:, peptide_index, protease], expected, atol=1e-12)
+            perturbed_scores = np.empty((4, len(sequences)))
+            for peptide_index, peptide in enumerate(sequences):
+                local = np.array([
+                    masked_window_score(peptide, bond, bootstraps[1, protease], SKEWED_BACKGROUND)[0]
+                    for bond in range(len(peptide) - 1)
+                ])
+                perturbed_scores[:, peptide_index] = [
+                    local.max(), local.sum(), local.mean(), logsumexp(local)
+                ]
+            for reduction in range(4):
+                expected_rho = spearmanr(
+                    scores[reduction, :, protease], perturbed_scores[reduction]
+                ).statistic
+                assert stability[reduction, 1, protease] == pytest.approx(expected_rho, abs=1e-12)
+        assert np.allclose(stability[:, 0], 1.0, atol=1e-12)
+
+    def test_constant_probe_rank_is_reported_as_zero(self) -> None:
+        """A one-peptide probe has undefined Spearman rho by construction."""
+
+        reference, bootstraps = self._example_matrices()
+        _, stability = bootstrap_bond_reduction_rank_stability(
+            ["ACDE"], reference, bootstraps
+        )
+        assert np.all(stability == 0.0)
+
+    def test_peptide_order_does_not_change_spearman(self) -> None:
+        """Permuting the same probe cannot change rank correlation."""
+
+        sequences = ["ACDE", "VWY", "MLKQ", "CR", "ACDYY"]
+        reference, bootstraps = self._example_matrices()
+        _, original = bootstrap_bond_reduction_rank_stability(sequences, reference, bootstraps)
+        _, permuted = bootstrap_bond_reduction_rank_stability(
+            [sequences[i] for i in [3, 0, 4, 2, 1]], reference, bootstraps
+        )
+        assert np.allclose(original, permuted, atol=1e-12)
+
+    @pytest.mark.parametrize("sequences", [[], ["A"], ["ACX"]])
+    def test_invalid_probe_is_rejected(self, sequences) -> None:
+        """The ranking requires at least one valid internal peptide bond."""
+
+        reference, bootstraps = self._example_matrices()
+        with pytest.raises(ValueError):
+            bootstrap_bond_reduction_rank_stability(sequences, reference, bootstraps)
 
 
 class TestBootstrap:
