@@ -121,4 +121,4 @@ The complete documentation entry page is [docs/README.md](docs/README.md).
 
 ## Citation
 
-If you use our model cite [this article](https://www.researchgate.net/publication/396142806_PepCompass_Navigating_peptide_embedding_spaces_using_Riemannian_Geometry)
+If you use our model cite [this article](https://openreview.net/forum?id=HENUU9VR8F)
