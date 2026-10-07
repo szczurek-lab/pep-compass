@@ -6,12 +6,13 @@ from pep_compass.autoencoder.geometry import StableTangentGeometry, TangentDecom
 from pep_compass.autoencoder.subriemannian import PointGeometry, SubRiemannianTangentSpace, TANGENT_GEOMETRY_CONTRACT
 from pep_compass.data.optimization import CandidateBatch, ObjectField, TensorField
 from pep_compass.optimization.components.walkers.base import Walker
+from pep_compass.optimization.components.walkers.strategies.sorbes.sorbes import Sorbes
 
 
 class SorbesWalker(Walker):
     """Run SORBES and attach output-point geometry for local enumeration."""
 
-    def __init__(self, sorbes) -> None:
+    def __init__(self, sorbes: Sorbes) -> None:
         self.sorbes = sorbes
         self.geometry_contract = TANGENT_GEOMETRY_CONTRACT
 

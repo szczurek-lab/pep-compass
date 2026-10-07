@@ -2,13 +2,39 @@
 
 import torch
 
-from pep_compass.optimization.components.walkers.strategies.sorbes.schema import SorbesStepResult
+from pep_compass.autoencoder.base import Autoencoder
+from pep_compass.optimization.components.walkers.strategies.sorbes.boundary.base import (
+    BoundaryStrategy,
+)
+from pep_compass.optimization.components.walkers.strategies.sorbes.directions.base import (
+    DirectionStrategy,
+)
+from pep_compass.optimization.components.walkers.strategies.sorbes.geometry.base import (
+    GeometryStrategy,
+)
+from pep_compass.optimization.components.walkers.strategies.sorbes.position_update.base import (
+    PositionUpdateStrategy,
+)
+from pep_compass.optimization.components.walkers.strategies.sorbes.scaling.base import (
+    ScalingStrategy,
+)
+from pep_compass.optimization.components.walkers.strategies.sorbes.schema import (
+    SorbesStepResult,
+)
 
 
 class Sorbes:
     """Advance points in the only supported SORBES stage order."""
 
-    def __init__(self, autoencoder, geometry, directions, scaling, position_update, boundary):
+    def __init__(
+        self,
+        autoencoder: Autoencoder,
+        geometry: GeometryStrategy,
+        directions: DirectionStrategy,
+        scaling: ScalingStrategy,
+        position_update: PositionUpdateStrategy,
+        boundary: BoundaryStrategy,
+    ):
         self.autoencoder = autoencoder
         self.geometry = geometry
         self.directions = directions
@@ -32,9 +58,7 @@ class Sorbes:
         acceleration = geometry.project_ambient_to_active_latent(ambient)  # (B, D)
 
         # Position update and main boundary behaviour
-        proposed, time_steps = self.position_update(
-            positions, directions, acceleration
-        )
+        proposed, time_steps = self.position_update(positions, directions, acceleration)
         accepted = self.boundary(positions, proposed, geometry)  # (B, D)
 
         # Output-point geometry shared by MUTANG and the next SORBES step

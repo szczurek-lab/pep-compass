@@ -19,10 +19,14 @@ if [[ -n "$(find "${TARGET_DIR}" -maxdepth 1 -name 'APEX_*' -print -quit 2>/dev/
     exit 0
 fi
 
-git clone --depth 1 --filter=blob:none --sparse \
+# Initialize sparse checkout separately to support Git 2.25.1.
+git clone --depth 1 --filter=blob:none --no-checkout \
     "${APEXGO_REPOSITORY}" "${TEMP_DIR}/APEXGo"
+
+git -C "${TEMP_DIR}/APEXGo" sparse-checkout init --cone
 git -C "${TEMP_DIR}/APEXGo" sparse-checkout set \
     optimization/apex_oracle/APEX_pathogen_models
+git -C "${TEMP_DIR}/APEXGo" checkout
 
 SOURCE_DIR="${TEMP_DIR}/APEXGo/optimization/apex_oracle/APEX_pathogen_models"
 if [[ ! -d "${SOURCE_DIR}" ]] || [[ -z "$(find "${SOURCE_DIR}" -type f -print -quit)" ]]; then

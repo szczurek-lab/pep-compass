@@ -4,12 +4,13 @@ import torch
 
 from pep_compass.data.optimization import CandidateBatch, ObjectField, TensorField
 from pep_compass.optimization.components.mutation_generators.base import MutationGenerator
+from pep_compass.optimization.components.mutation_generators.strategies.mutang.mutang import Mutang
 
 
 class MutangGenerator(MutationGenerator):
     """Convert the internal MUTANG results into an aligned candidate batch."""
 
-    def __init__(self, mutang):
+    def __init__(self, mutang: Mutang):
         self.mutang = mutang
         self.geometry_requirement = getattr(mutang.geometry, "requirement", None)
         self.requires_local_enumeration = mutang.geometry.local_enumeration_only
