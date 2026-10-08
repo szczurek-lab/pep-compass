@@ -176,9 +176,9 @@ class SecondOrderRiemannianBrownianEfficientSampling(SamplingWalker):
     def __init__(
         self,
         encoder_decoder: EncoderDecoder,
-        horizontal_threshold: float,
-        time_step: float,
-        max_horizontal_update_norm: float,
+        horizontal_threshold: float = 0.1,
+        time_step: float = 0.01,
+        max_horizontal_update_norm: float = 0.5,
         vertical_movement: bool = True,
     ):
         self.manifold = SubRiemannianManifold(

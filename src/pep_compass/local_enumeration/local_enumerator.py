@@ -34,9 +34,9 @@ class SamplingMutationLocalEnumerator(LocalEnumerator):
         encoder_decoder: HydrAMPEncoderDecoder,
         sampling_walker: SamplingWalker,
         mutation_enumerator: MutationEnumerator,
-        walker_trajectories_number: int,
-        time_walk_budget: float,
-        max_neighbour_levenstein: int | None = None,
+        walker_trajectories_number: int = 10,
+        time_walk_budget: float = 0.1,
+        max_neighbour_levenstein: int | None = 4,
         device: str = "cpu",
     ):
         super().__init__()

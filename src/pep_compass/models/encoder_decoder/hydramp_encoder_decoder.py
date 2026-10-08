@@ -1,23 +1,25 @@
-import torch
-from typing import Literal
-from torch import nn
-from pep_compass.models.hydramp.hydramp import HydrAMPDecoder, HydrAMPEncoder
-from pep_compass.models.encoder_decoder.encoder_decoder import EncoderDecoder
-from pep_compass.utils.sequence_utils import to_one_hot, translate_generated_peptide
-from einops import repeat, rearrange
 import os
+from typing import Literal
+
+import torch
+from einops import rearrange, repeat
+from torch import nn
+
+from pep_compass.models.encoder_decoder.encoder_decoder import EncoderDecoder
+from pep_compass.models.hydramp.hydramp import HydrAMPDecoder, HydrAMPEncoder
+from pep_compass.utils.sequence_utils import to_one_hot, translate_generated_peptide
 
 
 class HydrAMPEncoderDecoder(EncoderDecoder, nn.Module):
     def __init__(
         self,
         *,
-        jacobian_mode: Literal["strict", "approx"] = "strict",
+        jacobian_mode: Literal["strict", "approx"] = "approx",
         device: torch.device = "cpu",
         default_condition: torch.Tensor = torch.tensor([1.0, 1.0]),
         temp: float = 1.0,
-        jacobian_eps: float,
-        field_eps: float,
+        jacobian_eps: float = 0.05,
+        field_eps: float = 0.05,
     ):
         assert default_condition.ndim == 1, ValueError(
             f"Default condition should be 1D, got {default_condition.ndim}D instead."
