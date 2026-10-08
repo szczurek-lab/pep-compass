@@ -49,7 +49,7 @@ def load_predictor_models(mean_model_path = "Best_mean_predictor.pth",
         args["dropout"], args["number_of_predictions"], seq_len=25, alphabet_size=21,
         device = device
     )
-    mean_model.load_state_dict(torch.load(mean_model_path))
+    mean_model.load_state_dict(torch.load(mean_model_path, map_location = device))
 
     with open(var_config_path, "r") as f:
         args = json.load(f)
