@@ -20,6 +20,7 @@ class HydrAMPEncoderDecoder(EncoderDecoder, nn.Module):
         temp: float = 1.0,
         jacobian_eps: float = 0.05,
         field_eps: float = 0.05,
+        models_dir: str | None = None,
     ):
         assert default_condition.ndim == 1, ValueError(
             f"Default condition should be 1D, got {default_condition.ndim}D instead."
@@ -43,11 +44,14 @@ class HydrAMPEncoderDecoder(EncoderDecoder, nn.Module):
         self.encoder = HydrAMPEncoder(device=device)
         self.decoder = HydrAMPDecoder(device=device)
 
-        self._load_weights()
+        self._load_weights(models_dir)
 
-    def _load_weights(self):
-        file_dir = os.path.dirname(os.path.abspath(__file__))
-        weights_dir = f"{file_dir}/../hydramp/weights"
+    def _load_weights(self, models_dir: str | None = None):
+        if models_dir is None:
+            file_dir = os.path.dirname(os.path.abspath(__file__))
+            weights_dir = f"{file_dir}/../hydramp/weights"
+        else:
+            weights_dir = f"{models_dir}/HydrAMP"
 
         if not os.path.exists(weights_dir):
             raise FileNotFoundError(
