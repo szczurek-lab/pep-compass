@@ -35,9 +35,10 @@ class APEXPickleModule:
 
 class PredictorAPEX:
 
-    def __init__(self, device="cpu", batch_size=3000, path="default"):
+    def __init__(self, device="cpu", batch_size=3000, path="default", models_dir: str | None = None):
         self.device = device
         self.path = path
+        self.models_dir = models_dir
         if path == "default":
             self.pathogen_list = [
                 "A. baumannii ATCC 19606",
@@ -103,6 +104,8 @@ class PredictorAPEX:
         self.file_dir = os.path.dirname(os.path.abspath(__file__))
         self.APEX_models = []
         if path == "default":
+            if self.models_dir is not None:
+                self.file_dir = self.models_dir
             if not Path(f"{self.file_dir}/APEX_pathogen_models").exists():
                 raise FileNotFoundError(
                     f"Directory {self.file_dir}/APEX_pathogen_models with APEX pathogen models not found. "
