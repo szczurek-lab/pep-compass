@@ -21,6 +21,7 @@ class APEXBlackBox(AbstractBlackBox):
         evaluation_budget: int = float("inf"),
         force_isolation: bool = False,
         device: str = "cpu",
+        models_dir: str | None = None,
     ):
         super().__init__(
             batch_size=batch_size,
@@ -30,7 +31,7 @@ class APEXBlackBox(AbstractBlackBox):
             force_isolation=force_isolation,
         )
         
-        self.apex_predictor = PredictorAPEX(device=device)
+        self.apex_predictor = PredictorAPEX(device=device, models_dir=models_dir)
         
         if mic_aggregate == "max":
             mic_aggregate_func = lambda x: np.max(x, axis=1)
