@@ -2,7 +2,7 @@
 
 import torch
 
-from pep_compass.data.optimization import CandidateBatch, TensorField
+from pep_compass.data_schemas.candidates import CandidateBatch, TensorField
 
 
 def candidate_batch() -> CandidateBatch:

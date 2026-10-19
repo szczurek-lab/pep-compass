@@ -1,11 +1,13 @@
 """Tests for composable engine graph operations."""
 
-from pep_compass.optimization.engine.execution.context import OptimizationContext
-from pep_compass.optimization.engine import Flow, Loop, Parallel
-from pep_compass.optimization.tracking import InMemoryStepTracker
 from fixtures.autoencoders import MockAutoencoder
 from fixtures.candidates import candidate_batch
 from fixtures.components import SuffixStep
+
+from pep_compass.optimization.engine.execution.context import OptimizationContext
+from pep_compass.optimization.tracking import InMemoryStepTracker
+from pep_compass.steps.flow import Loop, Parallel
+from pep_compass.steps.flow.strategies.sequence import Flow
 
 
 def test_parallel_defaults_to_sequential_execution() -> None:
@@ -40,16 +42,10 @@ def test_parallel_merges_outputs_in_declared_branch_order() -> None:
 
 def test_loop_stops_when_a_step_produces_an_empty_batch() -> None:
     """Empty candidate sets must not execute redundant loop iterations."""
-    class EmptyStep(SuffixStep):
-        calls = 0
-
-        def _execute(self, batch, context):
-            self.calls += 1
-            return batch.select([])
 
     step = EmptyStep("")
 
-    result = Loop(step, iterations=3)(
+    result = Loop(steps=[step], iterations=3)(
         candidate_batch(),
         OptimizationContext(MockAutoencoder()),
     )
@@ -60,20 +56,11 @@ def test_loop_stops_when_a_step_produces_an_empty_batch() -> None:
 
 def test_loop_preserves_last_result_when_empty_batch_requests_stop() -> None:
     """An exhaustion sentinel must not erase the last committed iteration."""
-    class ExhaustionStep(SuffixStep):
-        calls = 0
-
-        def _execute(self, batch, context):
-            self.calls += 1
-            if self.calls == 1:
-                return super()._execute(batch, context)
-            context.state.stop_requested = True
-            return batch.select([])
 
     step = ExhaustionStep("1")
     context = OptimizationContext(MockAutoencoder())
 
-    result = Loop(step, iterations=3)(candidate_batch(), context)
+    result = Loop(steps=[step], iterations=3)(candidate_batch(), context)
 
     assert result.sequences == ("AA1", "BB1")
     assert step.calls == 2
@@ -84,7 +71,7 @@ def test_nested_tracking_preserves_loop_and_branch_identity() -> None:
     """Tracker records must identify replicated work independently."""
     tracker = InMemoryStepTracker()
     graph = Loop(
-        Parallel({"left": Flow([SuffixStep("L")])}),
+        steps=[Parallel({"left": Flow([SuffixStep("L")])})],
         iterations=2,
     )
 
@@ -97,3 +84,28 @@ def test_nested_tracking_preserves_loop_and_branch_identity() -> None:
     assert [record.loop_indices for record in records] == [(0,), (1,)]
     assert [record.branch_names for record in records] == [("left",), ("left",)]
     assert [record.branch_indices for record in records] == [(0,), (0,)]
+
+
+class EmptyStep(SuffixStep):
+    calls = 0
+
+    def _execute(self, batch, context):
+
+        self.calls += 1
+
+        return batch.select([])
+
+
+class ExhaustionStep(SuffixStep):
+    calls = 0
+
+    def _execute(self, batch, context):
+
+        self.calls += 1
+
+        if self.calls == 1:
+            return super()._execute(batch, context)
+
+        context.state.stop_requested = True
+
+        return batch.select([])

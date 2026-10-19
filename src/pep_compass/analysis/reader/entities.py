@@ -45,5 +45,9 @@ class ExperimentCollection:
 
     @property
     def runs(self) -> tuple[ExperimentRun, ...]:
-        """Return all discovered runs in stable experiment order."""
+        """Return all discovered runs in stable experiment order.
+
+        :return: Result of this operation.
+        :rtype: tuple[ExperimentRun, ...]
+        """
         return tuple(run for experiment in self.experiments for run in experiment.runs)

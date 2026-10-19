@@ -1,0 +1,19 @@
+{
+  "publication_doi": "10.1111/cts.12985",
+  "pmid": "33641212",
+  "pmcid": "PMC8301568",
+  "article_version": "PMC8301568.1",
+  "article_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8301568/",
+  "pdf_url": "https://pmc-oa-opendata.s3.amazonaws.com/PMC8301568.1/PMC8301568.1.pdf",
+  "sequence_locator": "Table 1; checked against the JATS XML table",
+  "measurement_locator": "Figure 3a, printed numeric half-lives and 95% confidence intervals on PDF page 9 (journal page 1357)",
+  "extraction_method": "Manual transcription of printed numerical labels, visually checked. No curve digitization, no values estimated from plotted coordinates.",
+  "review_date": "2026-10-01",
+  "sample": "50% v/v human serum at 37 degrees Celsius",
+  "chemistry": "Fmoc L-amino-acid synthesis; C-terminal carboxamide; free N-terminus",
+  "replicates": 3,
+  "replicates_detail": "Caption reports mean of three experiments per peptide. Independent donors/batches and raw replicate half-lives are not documented in this table.",
+  "half_life_fit": "One-phase exponential decay fitted to intact-peptide HPLC peak integration",
+  "scope": "16 experimental validation peptides. This table is not the 129-peptide regression training dataset or the 21 therapeutic-peptide validation set.",
+  "article_pdf_sha256": "ea77ed37135756c2d2208ec6e702b499f91782a7432400422149e5d68ccbd341"
+}

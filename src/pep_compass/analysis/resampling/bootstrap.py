@@ -18,7 +18,15 @@ class ClusterSampler:
     replace: bool = True
 
     def sample(self, frame: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
-        """Return rows belonging to sampled cluster identifiers."""
+        """Return rows belonging to sampled cluster identifiers.
+
+        :param frame: Frame.
+        :type frame: pd.DataFrame
+        :param rng: Run-owned random generator used for reproducible choices.
+        :type rng: np.random.Generator
+        :return: Result of this operation.
+        :rtype: pd.DataFrame
+        """
         grouped = frame.groupby(list(self.columns), sort=False).groups
         group_keys = list(grouped)
         if not group_keys:
@@ -27,10 +35,7 @@ class ClusterSampler:
         if not self.replace and size > len(group_keys):
             raise ValueError("sample_size exceeds available clusters")
         selected = rng.choice(len(group_keys), size=size, replace=self.replace)
-        pieces = [
-            frame.loc[grouped[group_keys[index]]]
-            for index in selected
-        ]
+        pieces = [frame.loc[grouped[group_keys[index]]] for index in selected]
         return pd.concat(pieces, ignore_index=True) if pieces else frame.iloc[0:0]
 
 
@@ -42,7 +47,15 @@ class RowSampler:
     replace: bool = True
 
     def sample(self, frame: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
-        """Return a row-resampled frame."""
+        """Return a row-resampled frame.
+
+        :param frame: Frame.
+        :type frame: pd.DataFrame
+        :param rng: Run-owned random generator used for reproducible choices.
+        :type rng: np.random.Generator
+        :return: Result of this operation.
+        :rtype: pd.DataFrame
+        """
         size = self.sample_size or len(frame)
         indices = rng.choice(len(frame), size=size, replace=self.replace)
         return frame.iloc[indices].reset_index(drop=True)
@@ -69,6 +82,14 @@ class BootstrapEngine:
         :param confidence: Percentile interval coverage.
         :param random_seed: Deterministic generator seed.
         :return: Long-form samples with interval columns attached.
+
+        :type frame: pd.DataFrame
+        :type statistic: Callable[[pd.DataFrame], float | Sequence[float]]
+        :type sampler: ClusterSampler | RowSampler
+        :type repetitions: int
+        :type confidence: float
+        :type random_seed: int
+        :rtype: pd.DataFrame
         """
         if repetitions < 1:
             raise ValueError("repetitions must be positive")

@@ -2,24 +2,27 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import torch
 
-from pep_compass.data.optimization import CandidateBatch
+from pep_compass.data_schemas.candidates import CandidateBatch
 from pep_compass.optimization.stability_estimation.estimation import (
     estimate_batch_memory,
 )
 from pep_compass.utils.logger import get_custom_logger
 
-logger = get_custom_logger(__name__)
-
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from pep_compass.optimization.engine.execution.state import OptimizationState
+
+
+logger = get_custom_logger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,7 +55,17 @@ class NullStabilityMonitor:
         batch: CandidateBatch,
         state: "OptimizationState | None" = None,
     ) -> MemorySnapshot | None:
-        """Return no snapshot for a disabled monitor."""
+        """Return no snapshot for a disabled monitor.
+
+        :param label: Label.
+        :type label: str
+        :param batch: Incoming aligned candidate batch.
+        :type batch: CandidateBatch
+        :param state: State.
+        :type state: OptimizationState | None
+        :return: Result of this operation.
+        :rtype: MemorySnapshot | None
+        """
         return None
 
 
@@ -79,6 +92,18 @@ class StabilityMonitor:
         detailed_fraction: float = 0.1,
         detailed_every_sample: bool = False,
     ) -> None:
+        """Initialize this object with the declared configuration.
+
+        :param enabled: Whether this optional measurement or recording operation is enabled.
+        :type enabled: bool
+        :param log_level: Log level.
+        :type log_level: int
+        :param detailed_fraction: Detailed fraction.
+        :type detailed_fraction: float
+        :param detailed_every_sample: Detailed every sample.
+        :type detailed_every_sample: bool
+        :rtype: None
+        """
         if not 0 < detailed_fraction <= 1:
             raise ValueError("Detailed sampling fraction must be in (0, 1].")
         self.enabled = enabled
@@ -101,6 +126,11 @@ class StabilityMonitor:
         :param iterations: Declared maximum engine iterations.
         :param oracle_calls: Optional oracle-call safety limit.
         :param generated_candidates: Optional candidate-generation safety limit.
+
+        :type iterations: int | None
+        :type oracle_calls: int | None
+        :type generated_candidates: int | None
+        :rtype: None
         """
         values = {
             "iterations": iterations,
@@ -127,15 +157,25 @@ class StabilityMonitor:
         :param label: Stable execution-boundary label.
         :param batch: Candidate batch live at the boundary.
         :return: Collected snapshot, or ``None`` when monitoring is disabled.
+
+        :type label: str
+        :type batch: CandidateBatch
+        :param state: State.
+        :type state: OptimizationState | None
+        :rtype: MemorySnapshot | None
         """
         if not self.enabled:
             return None
         triggers = self._consume_triggers(state)
         boundary_trigger = label in {"pipeline.input", "pipeline.output"}
         detailed = self.detailed_every_sample or boundary_trigger or bool(triggers)
-        trigger = ",".join(triggers) if triggers else (
-            "test_run" if self.detailed_every_sample else (
-                "pipeline_boundary" if boundary_trigger else None
+        trigger = (
+            ",".join(triggers)
+            if triggers
+            else (
+                "test_run"
+                if self.detailed_every_sample
+                else ("pipeline_boundary" if boundary_trigger else None)
             )
         )
         estimate = estimate_batch_memory(batch) if detailed else None
@@ -169,14 +209,26 @@ class StabilityMonitor:
         return snapshot
 
     def _interval(self, budget: int) -> int:
-        """Return the number of progress units between detailed samples."""
+        """Return the number of progress units between detailed samples.
+
+        :param budget: Budget.
+        :type budget: int
+        :return: Result of this operation.
+        :rtype: int
+        """
         return max(1, math.ceil(budget * self.detailed_fraction))
 
     def _consume_triggers(
         self,
         state: "OptimizationState | None",
     ) -> tuple[str, ...]:
-        """Advance crossed progress thresholds and return their names."""
+        """Advance crossed progress thresholds and return their names.
+
+        :param state: State.
+        :type state: OptimizationState | None
+        :return: Result of this operation.
+        :rtype: tuple[str, ...]
+        """
         if state is None:
             return ()
         progress = {
@@ -190,18 +242,18 @@ class StabilityMonitor:
             current = progress[name]
             if current < threshold:
                 continue
-            triggered.append(
-                f"{name}:{current}/{budget}"
-            )
+            triggered.append(f"{name}:{current}/{budget}")
             interval = self._interval(budget)
-            self._next_thresholds[name] = (
-                (current // interval) + 1
-            ) * interval
+            self._next_thresholds[name] = ((current // interval) + 1) * interval
         return tuple(triggered)
 
 
 def _current_rss_bytes() -> int | None:
-    """Read current resident memory on Linux without an external dependency."""
+    """Read current resident memory on Linux without an external dependency.
+
+    :return: Result of this operation.
+    :rtype: int | None
+    """
     statm = Path("/proc/self/statm")
     if not statm.exists():
         return None
@@ -212,8 +264,14 @@ def _current_rss_bytes() -> int | None:
         return None
 
 
-def _cuda_value(function) -> int | None:
-    """Return one CUDA allocator counter without forcing device creation."""
+def _cuda_value(function: Callable[[], int]) -> int | None:
+    """Return one CUDA allocator counter without forcing device creation.
+
+    :param function: Function.
+    :type function: Callable[[], int]
+    :return: Result of this operation.
+    :rtype: int | None
+    """
     if not torch.cuda.is_available() or not torch.cuda.is_initialized():
         return None
     return int(function())

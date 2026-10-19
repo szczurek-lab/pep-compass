@@ -37,18 +37,20 @@ your environment. The default backend keeps the package MIT-clean.
 
 ## Regenerating checked-in matrices
 
-Data-generation scripts (repo root):
+Canonical generation scripts belong to this library. The repository path
+`assets/scripts/generation/blosum_matrix` is a directory symlink to
+`assets/tools/blosum_matrix/scripts/generation`. From the repository root:
 
 ```bash
 cd assets/tools/blosum_matrix && uv sync
-uv run python ../../scripts/blosum_matrix/generate_all.py
+uv run python scripts/generation/generate_all.py
 ```
 
 Or individually:
 
 ```bash
-uv run python ../../scripts/blosum_matrix/export_blosum62.py
-uv run python ../../scripts/blosum_matrix/generate_ampblosum62.py
+uv run python scripts/generation/export_blosum62.py
+uv run python scripts/generation/generate_ampblosum62.py
 ```
 
 Defaults write to `data/peptides_data/blosum_matrix/`.

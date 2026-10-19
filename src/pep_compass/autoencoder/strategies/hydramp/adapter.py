@@ -1,37 +1,63 @@
 """HydrAMP implementation of the PepCompass autoencoder contract."""
 
-import torch
-from typing import Literal
-from torch import nn
+from __future__ import annotations
+
 from pathlib import Path
 from time import perf_counter
+from typing import Literal
+
+import torch
+from einops import rearrange, repeat
+from torch import nn
 
 from pep_compass.autoencoder.base import Autoencoder
 from pep_compass.autoencoder.strategies.hydramp.architecture import (
     HydrAMPDecoder,
     HydrAMPEncoder,
 )
-from pep_compass.utils.sequence_utils import to_one_hot, translate_generated_peptide
+from pep_compass.optimization.saving.artifacts import (
+    FileArtifact,
+    ModelArtifacts,
+    resolve_artifacts,
+)
 from pep_compass.utils.logger import get_custom_logger
-from pep_compass.registry import model_catalog
-from einops import repeat, rearrange
+from pep_compass.utils.sequence_utils import to_one_hot, translate_generated_peptide
 
 logger = get_custom_logger(__name__)
 
 
-class HydrampAutoencoder(Autoencoder, nn.Module):
+class HydrAMPModel(Autoencoder, nn.Module):
     """Load and execute the HydrAMP peptide autoencoder."""
+
     def __init__(
         self,
         *,
         jacobian_mode: Literal["strict", "approx"] = "strict",
-        device: torch.device = "cpu",
+        device: str | torch.device = "cpu",
         default_condition: torch.Tensor | None = None,
         temp: float = 1.0,
         jacobian_eps: float,
         field_eps: float,
         model_name: str,
-    ):
+    ) -> None:
+        """Initialize this object with the declared configuration.
+
+        :param jacobian_mode: Jacobian mode.
+        :type jacobian_mode: Literal['strict', 'approx']
+        :param device: Computation device accepted by the numerical backend.
+        :type device: str | torch.device
+        :param default_condition: Default condition.
+        :type default_condition: torch.Tensor | None
+        :param temp: Temp.
+        :type temp: float
+        :param jacobian_eps: Jacobian eps.
+        :type jacobian_eps: float
+        :param field_eps: Field eps.
+        :type field_eps: float
+        :param model_name: Named model variant.
+        :type model_name: str
+        :rtype: None
+        """
         if default_condition is None:
             default_condition = torch.tensor([1.0, 1.0])
         assert default_condition.ndim == 1, ValueError(
@@ -60,21 +86,26 @@ class HydrampAutoencoder(Autoencoder, nn.Module):
         self._load_weights()
 
     def _load_weights(self) -> None:
-        """Load state dictionaries for the selected bundled HydrAMP model."""
-        # Direct adapter use bypasses the runtime bootstrap registration path.
-        if self.model_name not in model_catalog.names("autoencoder.hydramp"):
-            from pep_compass.autoencoder.strategies.hydramp import register_hydramp
+        """Load state dictionaries for the selected bundled HydrAMP model.
 
-            register_hydramp()
+        :rtype: None
+        """
         started_at = perf_counter()
         weights_dir = Path(__file__).parent / "models" / self.model_name
         if not weights_dir.is_dir():
             raise FileNotFoundError(
                 f"HydrAMP weights directory does not exist: {weights_dir}"
             )
-        _, paths = model_catalog.resolve(
-            "autoencoder.hydramp",
-            self.model_name,
+        paths = resolve_artifacts(
+            ModelArtifacts(
+                "autoencoder.hydramp",
+                self.model_name,
+                self.model_name,
+                (
+                    FileArtifact("encoder_weights.pickle"),
+                    FileArtifact("decoder_weights.pickle"),
+                ),
+            ),
             root=Path(__file__).parent / "models",
         )
         encoder_path, decoder_path = paths
@@ -94,16 +125,23 @@ class HydrampAutoencoder(Autoencoder, nn.Module):
     # model properties
     @property
     def latent_dim(self) -> int:
-        """Return the HydrAMP latent dimension."""
+        """Return the HydrAMP latent dimension.
+
+        :return: Result of this operation.
+        :rtype: int
+        """
         return self.encoder.mean_linear.out_features
 
     @property
     def ambient_dim(self) -> int:
-        """Return the flattened decoder probability dimension."""
+        """Return the flattened decoder probability dimension.
+
+        :return: Result of this operation.
+        :rtype: int
+        """
         return self.decoder.gru.output_len * self.decoder.dense.out_features
 
-
-    # main functionality 
+    # main functionality
     def decoder_forward(
         self,
         x: torch.Tensor,
@@ -118,6 +156,12 @@ class HydrampAutoencoder(Autoencoder, nn.Module):
         :param log_softmax: Return token log-probabilities.
         :param flatten: Flatten sequence and vocabulary dimensions.
         :return: Decoder output ``(B, L * V)`` or ``(B, L, V)``.
+
+        :type x: torch.Tensor
+        :type softmax: bool
+        :type log_softmax: bool
+        :type flatten: bool
+        :rtype: torch.Tensor
         """
         assert not (softmax and log_softmax), ValueError(
             "Cannot use both softmax and log_softmax at the same time"
@@ -148,7 +192,15 @@ class HydrampAutoencoder(Autoencoder, nn.Module):
         return decoder_output
 
     def decode_peptides(self, batch: torch.Tensor, batch_size: int = 1) -> list[str]:
-        """Decode latent positions into peptide strings in bounded batches."""
+        """Decode latent positions into peptide strings in bounded batches.
+
+        :param batch: Incoming aligned candidate batch.
+        :type batch: torch.Tensor
+        :param batch_size: Batch size.
+        :type batch_size: int
+        :return: Result of this operation.
+        :rtype: list[str]
+        """
         started_at = perf_counter()
         if batch.ndim == 1:
             batch = batch.unsqueeze(0)
@@ -173,21 +225,39 @@ class HydrampAutoencoder(Autoencoder, nn.Module):
         return decoded_peptides
 
     def encoder_forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        """Return latent mean and scale for encoded sequence tokens."""
+        """Return latent mean and scale for encoded sequence tokens.
+
+        :param x: X.
+        :type x: torch.Tensor
+        :return: Result of this operation.
+        :rtype: tuple[torch.Tensor, torch.Tensor]
+        """
         mean, std = self.encoder(x)
         return mean, std
 
     def encode_peptides_with_std(
         self, peptides: list[str]
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Encode peptide strings into latent means and scales."""
+        """Encode peptide strings into latent means and scales.
+
+        :param peptides: Peptide strings to encode.
+        :type peptides: list[str]
+        :return: Result of this operation.
+        :rtype: tuple[torch.Tensor, torch.Tensor]
+        """
         one_hot_peptides = torch.tensor(
             [to_one_hot(peptide) for peptide in peptides], device=self.device
         )
         return self.encoder_forward(one_hot_peptides)
 
     def encode_peptides(self, peptides: list[str]) -> torch.Tensor:
-        """Encode peptide strings into latent means ``(B, D)``."""
+        """Encode peptide strings into latent means ``(B, D)``.
+
+        :param peptides: Peptide strings to encode.
+        :type peptides: list[str]
+        :return: Result of this operation.
+        :rtype: torch.Tensor
+        """
         started_at = perf_counter()
         one_hot_peptides = torch.tensor(
             [to_one_hot(peptide) for peptide in peptides], device=self.device

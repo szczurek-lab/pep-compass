@@ -1,0 +1,11 @@
+defaults:
+  - pipeline: simple
+  - runner: default
+  - input: example
+  - orchestrator: default
+  - backend: local
+  - _self_
+plugins: []
+hydra:
+  job:
+    chdir: false

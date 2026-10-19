@@ -1,0 +1,49 @@
+{
+  "archive": [
+    {
+      "objective": "hydrophobicity",
+      "sequence": "FLYKWWIRIGRLWL",
+      "score": 0.28357142857142853,
+      "direction": "maximize",
+      "evaluation_index": 0,
+      "first_evaluation_index": 0,
+      "lineage_json": "{}"
+    },
+    {
+      "objective": "hydrophobicity",
+      "sequence": "FLYKWWPRIGRLKL",
+      "score": 0.027142857142857135,
+      "direction": "maximize",
+      "evaluation_index": 1,
+      "first_evaluation_index": 1,
+      "lineage_json": "{}"
+    },
+    {
+      "objective": "hydrophobicity",
+      "sequence": "FLYKWWPRIGRLWL",
+      "score": 0.19214285714285714,
+      "direction": "maximize",
+      "evaluation_index": 2,
+      "first_evaluation_index": 2,
+      "lineage_json": "{}"
+    }
+  ],
+  "terminal": [
+    "FLYKWWIRIGRLWL",
+    "FLYKWWPRIGRLKL",
+    "FLYKWWPRIGRLWL"
+  ],
+  "summary": {
+    "status": "completed",
+    "duration_seconds": 0.12780640900018625,
+    "oracle_calls": 3,
+    "generated_candidates": 4,
+    "completed_iterations": 1,
+    "iteration_events": 1,
+    "best_sequence": "FLYKWWIRIGRLWL",
+    "best_score": 0.28357142857142853,
+    "objective_name": "hydrophobicity",
+    "terminal_count": 3,
+    "error": null
+  }
+}

@@ -41,8 +41,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--raw-root",
         type=Path,
-        default=acquisition_root() / "raw",
-        help="Root directory for source artifacts.",
+        default=None,
+        help="Explicit output override; DRAMP defaults to half_time_datasets, HPA to serum calibration.",
     )
     parser.add_argument("--force", action="store_true", help="Replace an existing local source artifact.")
     parser.add_argument("--timeout-seconds", type=int, default=DEFAULT_TIMEOUT_SECONDS, help=argparse.SUPPRESS)
@@ -57,6 +57,16 @@ def main(arguments: list[str] | None = None) -> int:
     """
 
     args = build_parser().parse_args(arguments)
+    if args.source == "dramp_stability" and args.raw_root is None:
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "half_time_data"))
+        from half_time_sources import acquire
+        try:
+            acquire("dramp", force=args.force)
+        except (OSError, ValueError) as error:
+            print(f"error: canonical DRAMP acquisition failed: {error}", file=sys.stderr)
+            return 1
+        return 0
+    args.raw_root = args.raw_root or acquisition_root() / "raw"
     source = SOURCES[args.source]
     destination = args.raw_root.joinpath(*source["destination"])
     receipt_path = destination.parent / "download_manifest.json"

@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from typing import Literal
 
 import torch
-from einops import rearrange
 
 
 class Autoencoder(ABC):
@@ -19,38 +18,99 @@ class Autoencoder(ABC):
         jacobian_eps: float,
         field_eps: float,
     ) -> None:
+        """Initialize this object with the declared configuration.
+
+        :param jacobian_mode: Jacobian mode.
+        :type jacobian_mode: Literal['strict', 'approx']
+        :param jacobian_eps: Jacobian eps.
+        :type jacobian_eps: float
+        :param field_eps: Field eps.
+        :type field_eps: float
+        :rtype: None
+        """
         if jacobian_mode not in {"strict", "approx"}:
             raise ValueError(f"Unknown Jacobian mode: {jacobian_mode}")
-        if jacobian_eps <= 0 or field_eps <= 0:
-            raise ValueError("Finite-difference epsilons must be positive.")
+        from pep_compass.utils.validation import validate_positive
+
+        validate_positive(jacobian_eps, "autoencoder.jacobian_eps")
+        validate_positive(field_eps, "autoencoder.field_eps")
         self.jacobian_mode = jacobian_mode
         self.jacobian_eps = jacobian_eps
         self.field_eps = field_eps
 
     @abstractmethod
     def decoder_forward(self, latent_positions: torch.Tensor) -> torch.Tensor:
-        """Decode latent positions into an ambient representation."""
+        """Decode independent latent rows into an ambient tensor (B, A).
+
+        :param latent_positions: Latent coordinates with shape (B, D).
+        :type latent_positions: torch.Tensor
+        :return: Result of this operation.
+        :rtype: torch.Tensor
+        """
 
     @abstractmethod
-    def encoder_forward(self, encoded_sequences: torch.Tensor):
-        """Encode model-specific sequence tensors."""
+    def encoder_forward(
+        self, encoded_sequences: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor] | torch.Tensor:
+        """Encode model-specific sequence tensors.
+
+        :param encoded_sequences: Encoded sequences.
+        :type encoded_sequences: torch.Tensor
+        :return: Result of this operation.
+        :rtype: tuple[torch.Tensor, torch.Tensor] | torch.Tensor
+        """
 
     @abstractmethod
     def encode_peptides(self, peptides: list[str]) -> torch.Tensor:
-        """Encode peptide strings into latent means ``(B, D)``."""
+        """Encode peptide strings into latent means ``(B, D)``.
+
+        :param peptides: Peptide strings to encode.
+        :type peptides: list[str]
+        :return: Result of this operation.
+        :rtype: torch.Tensor
+        """
+
+    @abstractmethod
+    def decode_peptides(self, latent_positions: torch.Tensor) -> list[str]:
+        """Decode latent rows into peptide strings for walker execution.
+
+        :param latent_positions: Latent batch with shape (B, D).
+        :return: One decoded sequence per input row.
+        :raises NotImplementedError: If string decoding is unsupported.
+
+        :type latent_positions: torch.Tensor
+        :rtype: list[str]
+        """
+        raise NotImplementedError(
+            "This autoencoder does not implement peptide decoding."
+        )
 
     @property
     @abstractmethod
     def latent_dim(self) -> int:
-        """Return latent dimension ``D``."""
+        """Return latent dimension ``D``.
+
+        :return: Result of this operation.
+        :rtype: int
+        """
 
     @property
     @abstractmethod
     def ambient_dim(self) -> int:
-        """Return flattened decoder-output dimension ``A``."""
+        """Return flattened decoder-output dimension ``A``.
+
+        :return: Result of this operation.
+        :rtype: int
+        """
 
     def decoder_jacobian(self, latent_positions: torch.Tensor) -> torch.Tensor:
-        """Return decoder Jacobians with shape ``(B, A, D)``."""
+        """Return decoder Jacobians with shape ``(B, A, D)``.
+
+        :param latent_positions: Latent coordinates with shape (B, D).
+        :type latent_positions: torch.Tensor
+        :return: Result of this operation.
+        :rtype: torch.Tensor
+        """
         if latent_positions.ndim != 2:
             raise ValueError("Latent positions must have shape (B, D).")
         if self.jacobian_mode == "strict":
@@ -58,15 +118,31 @@ class Autoencoder(ABC):
         return self._decoder_jacobian_approx(latent_positions)
 
     def _decoder_jacobian_strict(self, latent_positions: torch.Tensor) -> torch.Tensor:
-        """Compute exact per-sample decoder Jacobians through autograd."""
+        """Compute exact per-sample decoder Jacobians through autograd.
+
+        :param latent_positions: Latent coordinates with shape (B, D).
+        :type latent_positions: torch.Tensor
+        :return: Result of this operation.
+        :rtype: torch.Tensor
+        """
+        # Row-separable decoder differentiation
+        ## REMARK: Summing the output batch removes the redundant output-batch
+        ## axis. Independent decoder rows then produce their own Jacobian blocks,
+        ## without allocating the full (B, A, B, D) cross-sample Jacobian.
         jacobian = torch.autograd.functional.jacobian(
-            self.decoder_forward,
+            lambda positions: self.decoder_forward(positions).sum(dim=0),
             latent_positions,
-        )[0]
-        return rearrange(jacobian, "a b d -> b a d")  # (B, A, D)
+        )  # (A, B, D)
+        return jacobian.permute(1, 0, 2)  # (B, A, D)
 
     def _decoder_jacobian_approx(self, latent_positions: torch.Tensor) -> torch.Tensor:
-        """Approximate batched decoder Jacobians by forward differences."""
+        """Approximate batched decoder Jacobians by forward differences.
+
+        :param latent_positions: Latent coordinates with shape (B, D).
+        :type latent_positions: torch.Tensor
+        :return: Result of this operation.
+        :rtype: torch.Tensor
+        """
         delta = torch.cat(
             [
                 torch.eye(
@@ -83,9 +159,9 @@ class Autoencoder(ABC):
             ],
             dim=0,
         )  # (D + 1, D)
-        decoder_input = (
-            latent_positions[:, None, :] + delta[None, :, :]
-        ).reshape(-1, self.latent_dim)  # (B * (D + 1), D)
+        decoder_input = (latent_positions[:, None, :] + delta[None, :, :]).reshape(
+            -1, self.latent_dim
+        )  # (B * (D + 1), D)
         with torch.no_grad():
             decoder_output = self.decoder_forward(decoder_input)
         decoder_output = decoder_output.reshape(
@@ -105,8 +181,22 @@ class Autoencoder(ABC):
         *,
         ambient_point: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        """Approximate the second directional derivative of the decoder."""
-        center = self.decoder_forward(latent_point) if ambient_point is None else ambient_point
+        """Approximate the second directional derivative of the decoder.
+
+        :param latent_point: Latent point.
+        :type latent_point: torch.Tensor
+        :param direction: Objective ordering, minimize or maximize.
+        :type direction: torch.Tensor
+        :param ambient_point: Ambient point.
+        :type ambient_point: torch.Tensor | None
+        :return: Result of this operation.
+        :rtype: torch.Tensor
+        """
+        center = (
+            self.decoder_forward(latent_point)
+            if ambient_point is None
+            else ambient_point
+        )
         right = self.decoder_forward(latent_point + self.field_eps * direction)
         left = self.decoder_forward(latent_point - self.field_eps * direction)
         return (right + left - 2 * center) / self.field_eps**2
@@ -119,7 +209,19 @@ class Autoencoder(ABC):
         *,
         eps: float = 0.1,
     ) -> torch.Tensor:
-        """Approximate a mixed decoder derivative by central differences."""
+        """Approximate a mixed decoder derivative by central differences.
+
+        :param latent_point: Latent point.
+        :type latent_point: torch.Tensor
+        :param vector1: Vector1.
+        :type vector1: torch.Tensor
+        :param vector2: Vector2.
+        :type vector2: torch.Tensor
+        :param eps: Eps.
+        :type eps: float
+        :return: Result of this operation.
+        :rtype: torch.Tensor
+        """
         return (
             self.decoder_forward(latent_point + eps * vector1 + eps * vector2)
             - self.decoder_forward(latent_point - eps * vector1 + eps * vector2)

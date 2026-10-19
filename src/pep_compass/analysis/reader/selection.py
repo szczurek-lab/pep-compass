@@ -4,13 +4,12 @@ from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, replace
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
-from pep_compass.analysis.reader.data_schemas import get_schema
 from pep_compass.analysis.reader.entities import ExperimentRun
+from pep_compass.optimization.saving.reader import AnalysisReader
 
 if TYPE_CHECKING:
     from pep_compass.analysis.reader.reader import ExperimentReader
@@ -30,7 +29,13 @@ class ExperimentSelection:
     row_filters: Mapping[str, Any]
 
     def rows(self, **filters: Any) -> "ExperimentSelection":
-        """Return a copy with additional deferred table-row filters."""
+        """Return a copy with additional deferred table-row filters.
+
+        :param filters: Filters.
+        :type filters: Any
+        :return: Result of this operation.
+        :rtype: ExperimentSelection
+        """
         return replace(self, row_filters={**self.row_filters, **filters})
 
     def select(
@@ -42,7 +47,23 @@ class ExperimentSelection:
         seeds: list[int] | None = None,
         parameters: Mapping[str, Any] | None = None,
     ) -> "ExperimentSelection":
-        """Further restrict runs using manifest and resolved-config metadata."""
+        """Further restrict runs using manifest and resolved-config metadata.
+
+        :param experiments: Experiments.
+        :type experiments: list[str] | None
+        :param methods: Methods.
+        :type methods: list[str] | None
+        :param grid_ids: Grid ids.
+        :type grid_ids: list[str] | None
+        :param peptides: Peptide strings to encode.
+        :type peptides: list[str] | None
+        :param seeds: Seeds.
+        :type seeds: list[int] | None
+        :param parameters: Named configuration values consumed by this operation.
+        :type parameters: Mapping[str, Any] | None
+        :return: Result of this operation.
+        :rtype: ExperimentSelection
+        """
         selectors = {
             "experiment": experiments,
             "method": methods,
@@ -59,8 +80,7 @@ class ExperimentSelection:
             ):
                 continue
             if any(
-                metadata.get(key)
-                not in (value if isinstance(value, list) else [value])
+                metadata.get(key) not in (value if isinstance(value, list) else [value])
                 for key, value in (parameters or {}).items()
             ):
                 continue
@@ -79,44 +99,42 @@ class ExperimentSelection:
         :param columns: Source columns requested by the analysis.
         :param chunk_size: Maximum source rows read at once.
         :return: Iterator of canonical chunks enriched with run metadata.
+
+        :type table: str
+        :type columns: list[str] | None
+        :type chunk_size: int
+        :rtype: Iterator[pd.DataFrame]
         """
-        schema = get_schema(table)
         for run in self.runs:
-            path = run.tracking_path / schema.filename
-            if not path.exists():
-                continue
-            available = schema.inspect(path)
-            requested_source = (
-                [column for column in columns if column in available]
-                if columns is not None
-                else None
-            )
-            requested_metadata = (
-                [column for column in columns if column not in available]
-                if columns is not None
-                else ["experiment", "grid_id", "method", "seed", "name"]
-            )
-            missing_metadata = set(requested_metadata) - set(run.metadata)
-            if missing_metadata:
-                raise KeyError(
-                    f"Missing run metadata columns: {sorted(missing_metadata)}"
+            with AnalysisReader(run.tracking_path) as source:
+                handle = source.tables[table]
+                available = set(handle.columns)
+                requested = (
+                    list(columns) if columns is not None else list(handle.columns)
                 )
-            applicable_filters = {
-                key: value
-                for key, value in self.row_filters.items()
-                if key in available
-            }
-            for chunk in schema.scan(
-                path,
-                columns=requested_source,
-                filters=applicable_filters,
-                chunk_size=chunk_size,
-            ):
-                for key in requested_metadata:
-                    chunk[key] = run.metadata[key]
-                if columns is not None:
-                    chunk = chunk[columns]
-                yield chunk
+                metadata = [name for name in requested if name not in available]
+                missing = set(metadata) - run.metadata.keys()
+                if missing:
+                    raise KeyError(f"Missing columns: {sorted(missing)}.")
+                filters = {
+                    key: value
+                    for key, value in self.row_filters.items()
+                    if key in available
+                }
+                projected = [name for name in requested if name in available]
+                required = list(dict.fromkeys([*projected, *filters])) or [
+                    handle.columns[0]
+                ]
+                for chunk in handle.scan(required, chunk_size=chunk_size):
+                    for key, value in filters.items():
+                        chunk = chunk[
+                            chunk[key].isin(value)
+                            if isinstance(value, (list, tuple, set))
+                            else chunk[key].eq(value)
+                        ]
+                    for key in metadata:
+                        chunk[key] = run.metadata[key]
+                    yield chunk[requested]
 
     def collect(
         self,
@@ -124,7 +142,17 @@ class ExperimentSelection:
         columns: list[str] | None = None,
         chunk_size: int = 100_000,
     ) -> pd.DataFrame:
-        """Materialize a selected table when the caller accepts its memory cost."""
+        """Materialize a selected table when the caller accepts its memory cost.
+
+        :param table: Table.
+        :type table: str
+        :param columns: Column names to project in the requested order.
+        :type columns: list[str] | None
+        :param chunk_size: Maximum rows materialized in one scan chunk.
+        :type chunk_size: int
+        :return: Result of this operation.
+        :rtype: pd.DataFrame
+        """
         chunks = list(self.scan(table, columns=columns, chunk_size=chunk_size))
         return pd.concat(chunks, ignore_index=True) if chunks else pd.DataFrame()
 
@@ -138,49 +166,40 @@ class ExperimentSelection:
         :param table: Logical table name registered in ``data_schemas``.
         :param chunk_size: Rows per chunk when deferred filters require parsing.
         :return: Number of selected data rows across all runs.
-        """
-        schema = get_schema(table)
-        total = 0
-        for run in self.runs:
-            path = run.tracking_path / schema.filename
-            if not path.exists():
-                continue
-            available = schema.inspect(path)
-            applicable_filters = {
-                key: value
-                for key, value in self.row_filters.items()
-                if key in available
-            }
-            if applicable_filters:
-                total += sum(
-                    len(chunk)
-                    for chunk in schema.scan(
-                        path,
-                        columns=list(applicable_filters),
-                        filters=applicable_filters,
-                        chunk_size=chunk_size,
-                    )
-                )
-                continue
-            with path.open("rb") as source:
-                row_count = sum(
-                    block.count(b"\n")
-                    for block in iter(lambda: source.read(8 * 1024 * 1024), b"")
-                )
-            total += max(0, row_count - 1)
-        return total
 
-    def paths(self, table: str) -> tuple[Path, ...]:
-        """Return existing source paths for one logical table."""
-        schema = get_schema(table)
-        return tuple(
-            path
-            for run in self.runs
-            if (path := run.tracking_path / schema.filename).exists()
-        )
+        :type table: str
+        :type chunk_size: int
+        :rtype: int
+        """
+        if not self.row_filters:
+            total = 0
+            for run in self.runs:
+                with AnalysisReader(run.tracking_path) as reader:
+                    total += reader.tables[table].count_rows()
+            return total
+        return sum(len(chunk) for chunk in self.scan(table, chunk_size=chunk_size))
+
+    def paths(self, table: str) -> tuple[object, ...]:
+        """Return canonical SQLite bundle paths containing the logical table.
+
+        :param table: Table.
+        :type table: str
+        :return: Result of this operation.
+        :rtype: tuple[object, ...]
+        """
+        paths = []
+        for run in self.runs:
+            with AnalysisReader(run.tracking_path) as reader:
+                if table in reader.tables:
+                    paths.append(run.tracking_path / "results.sqlite")
+        return tuple(paths)
 
     def specification(self) -> dict[str, Any]:
-        """Return stable selection metadata used as an analysis-cache key."""
+        """Return stable selection metadata used as an analysis-cache key.
+
+        :return: Result of this operation.
+        :rtype: dict[str, Any]
+        """
         input_files = []
         for run in self.runs:
             for path in sorted(run.tracking_path.glob("*")):

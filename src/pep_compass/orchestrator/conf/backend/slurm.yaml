@@ -1,0 +1,4 @@
+_target_: pep_compass.orchestrator.backends.slurm.SlurmBackend
+template_path: null
+template: null
+settings: {}

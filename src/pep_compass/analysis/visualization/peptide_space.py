@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -10,17 +12,32 @@ import seaborn as sns
 from pep_compass.analysis.result import AnalysisResult
 from pep_compass.analysis.visualization.theme import PlotTheme
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
+
 
 class PeptideSpaceVisualizer:
     """Render group_locality results using one shared theme."""
 
     def __init__(self, theme: PlotTheme) -> None:
+        """Initialize this object with the declared configuration.
+
+        :param theme: Theme.
+        :type theme: PlotTheme
+        :rtype: None
+        """
         self.theme = theme
 
-    def _axes(self):
-        with sns.axes_style(self.theme.style), sns.plotting_context(
-            self.theme.context
-        ):
+    def _axes(self) -> tuple[object, object]:
+        """Axes.
+
+        :return: Result of this operation.
+        :rtype: tuple[object, object]
+        """
+        with sns.axes_style(self.theme.style), sns.plotting_context(self.theme.context):
             figure, axes = plt.subplots(
                 figsize=(
                     self.theme.figure_size[0] * 1.6,
@@ -30,15 +47,25 @@ class PeptideSpaceVisualizer:
             )
         return figure, axes
 
-    def _group_order(self, groups) -> list:
-        """Order groups by descending size, so large/small groups are grouped visually."""
+    def _group_order(self, groups: Sequence[str]) -> list[str]:
+        """Order groups by descending size, so large/small groups are grouped visually.
+
+        :param groups: Groups.
+        :type groups: Sequence[str]
+        :return: Result of this operation.
+        :rtype: list[str]
+        """
         return list(groups.value_counts().sort_values(ascending=False).index)
 
-    def neighbor_distance(self, result: AnalysisResult):
+    def neighbor_distance(self, result: AnalysisResult) -> Axes:
         """Plot nearest-neighbor distance distribution, one violin per group.
 
         :param result: Output of ``group_locality`` -- ``data`` holds
             ``neighbor_distance`` rows (one per sampled member per neighbor).
+
+        :type result: AnalysisResult
+        :return: Result of this operation.
+        :rtype: Axes
         """
         data = result.data
         if data.empty:
@@ -68,11 +95,15 @@ class PeptideSpaceVisualizer:
             label.set_horizontalalignment("right")
         return axes
 
-    def centroid_distance(self, result: AnalysisResult):
+    def centroid_distance(self, result: AnalysisResult) -> Axes:
         """Plot each member's distance to its group centroid, one violin per group.
 
         :param result: Output of ``group_locality`` -- reads
             ``diagnostics["centroid_distance"]``.
+
+        :type result: AnalysisResult
+        :return: Result of this operation.
+        :rtype: Axes
         """
         data = result.diagnostics.get("centroid_distance")
         if data is None or data.empty:
@@ -101,7 +132,7 @@ class PeptideSpaceVisualizer:
 
     def separation_heatmap(
         self, within_result: AnalysisResult, between_result: AnalysisResult
-    ):
+    ) -> Axes:
         """Plot median nearest-neighbor distance: diagonal = within group,
         off-diagonal = between groups.
 
@@ -113,8 +144,15 @@ class PeptideSpaceVisualizer:
 
         :param within_result: Output of ``group_locality``.
         :param between_result: Output of ``between_group_distance``.
+
+        :type within_result: AnalysisResult
+        :type between_result: AnalysisResult
+        :return: Result of this operation.
+        :rtype: Axes
         """
-        within_median = within_result.data.groupby("group")["neighbor_distance"].median()
+        within_median = within_result.data.groupby("group")[
+            "neighbor_distance"
+        ].median()
         between_median = (
             between_result.data.groupby(["group", "other_group"])["neighbor_distance"]
             .median()
@@ -144,7 +182,7 @@ class PeptideSpaceVisualizer:
             label.set_horizontalalignment("right")
         return axes
 
-    def centroid_distance_heatmap(self, between_result: AnalysisResult):
+    def centroid_distance_heatmap(self, between_result: AnalysisResult) -> Axes:
         """Plot exact centroid-to-centroid distance, all ordered group pairs.
 
         Unlike :meth:`separation_heatmap` (nearest-neighbor based, subject to
@@ -154,11 +192,17 @@ class PeptideSpaceVisualizer:
 
         :param between_result: Output of ``between_group_distance`` --
             reads ``diagnostics["centroid_distance"]``.
+
+        :type between_result: AnalysisResult
+        :return: Result of this operation.
+        :rtype: Axes
         """
         data = between_result.diagnostics.get("centroid_distance")
         if data is None or data.empty:
             raise ValueError("Cannot visualize an empty centroid-distance result")
-        matrix = data.pivot(index="group", columns="other_group", values="centroid_distance")
+        matrix = data.pivot(
+            index="group", columns="other_group", values="centroid_distance"
+        )
         groups = sorted(set(matrix.index) | set(matrix.columns))
         matrix = matrix.reindex(index=groups, columns=groups)
         for group in groups:
@@ -185,7 +229,7 @@ class PeptideSpaceVisualizer:
 
     def neighbor_distance_by_reference(
         self, within_result: AnalysisResult, between_result: AnalysisResult
-    ):
+    ) -> Figure:
         """One panel per group: full distance distribution, own group vs. every other.
 
         ``separation_heatmap`` only shows the median per pair -- this shows
@@ -197,6 +241,11 @@ class PeptideSpaceVisualizer:
         :param between_result: Output of ``between_group_distance``, computed
             with the SAME ``neighbor_count`` as ``within_result`` -- otherwise
             the two are not comparable.
+
+        :type within_result: AnalysisResult
+        :type between_result: AnalysisResult
+        :return: Result of this operation.
+        :rtype: Figure
         """
         if within_result.metadata.get("neighbor_count") != between_result.metadata.get(
             "neighbor_count"
@@ -222,7 +271,10 @@ class PeptideSpaceVisualizer:
             figure, axes_grid = plt.subplots(
                 nrows,
                 ncols,
-                figsize=(self.theme.figure_size[0] * 2.2, self.theme.figure_size[1] * 0.9 * nrows),
+                figsize=(
+                    self.theme.figure_size[0] * 2.2,
+                    self.theme.figure_size[1] * 0.9 * nrows,
+                ),
                 dpi=self.theme.dpi,
                 squeeze=False,
             )

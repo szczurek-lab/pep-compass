@@ -24,7 +24,7 @@ import torch
 from pep_compass.analysis.analysis_types._encoding import encode_sequences
 from pep_compass.analysis.analysis_types.locality._streaming import NestedProgress
 from pep_compass.analysis.result import AnalysisResult
-from pep_compass.autoencoder.strategies.hydramp.adapter import HydrampAutoencoder
+from pep_compass.autoencoder.strategies.hydramp.adapter import HydrAMPModel
 
 
 def load_single_label_groups(
@@ -44,6 +44,11 @@ def load_single_label_groups(
     :param sequence_column: Column holding the peptide sequence.
     :return: ``sequence``/``group`` columns, one row per unambiguous peptide,
         deduplicated by sequence.
+
+    :type peptides_path: str | Path
+    :type group_column: str
+    :type sequence_column: str
+    :rtype: pd.DataFrame
     """
     data = pd.read_csv(peptides_path)
     single_label = ~data[group_column].astype(str).str.contains(";")
@@ -86,6 +91,11 @@ def load_amp_mic_groups(
     :param group_column: Column holding the ``;``-joined dataset membership tags.
     :param sequence_column: Column holding the peptide sequence.
     :return: ``sequence``/``group`` columns, deduplicated by sequence.
+
+    :type peptides_path: str | Path
+    :type group_column: str
+    :type sequence_column: str
+    :rtype: pd.DataFrame
     """
     data = pd.read_csv(peptides_path)
     tags = data[group_column].astype(str)
@@ -114,9 +124,23 @@ def _build_autoencoder(
     jacobian_mode: str,
     jacobian_eps: float,
     field_eps: float,
-) -> HydrampAutoencoder:
-    """Construct a standalone, ``eval()``-mode encoder for group_locality."""
-    autoencoder = HydrampAutoencoder(
+) -> HydrAMPModel:
+    """Construct a standalone, ``eval()``-mode encoder for group_locality.
+
+    :param model_name: Named model variant.
+    :type model_name: str
+    :param device: Computation device accepted by the numerical backend.
+    :type device: str
+    :param jacobian_mode: Jacobian mode.
+    :type jacobian_mode: str
+    :param jacobian_eps: Jacobian eps.
+    :type jacobian_eps: float
+    :param field_eps: Field eps.
+    :type field_eps: float
+    :return: Result of this operation.
+    :rtype: HydrAMPModel
+    """
+    autoencoder = HydrAMPModel(
         device=device,
         jacobian_mode=jacobian_mode,
         jacobian_eps=jacobian_eps,
@@ -142,6 +166,13 @@ def _validate_locality_inputs(
     :param neighbor_query_batch: Queries evaluated in one distance chunk.
     :param encode_batch_size: Sequences encoded in one model forward pass.
     :raises ValueError: If required columns are absent or a size is not positive.
+
+    :type peptides: pd.DataFrame
+    :type neighbor_count: int
+    :type neighbor_sample_size: int
+    :type neighbor_query_batch: int
+    :type encode_batch_size: int
+    :rtype: None
     """
     required_columns = {"sequence", "group"}
     missing_columns = required_columns - set(peptides.columns)
@@ -161,11 +192,23 @@ def _validate_locality_inputs(
 
 def _encode_groups(
     peptides: pd.DataFrame,
-    autoencoder: HydrampAutoencoder,
+    autoencoder: HydrAMPModel,
     encode_batch_size: int,
     nested_progress: NestedProgress,
 ) -> dict[str, torch.Tensor]:
-    """Encode every peptide once per group. Shared by within/between-group functions."""
+    """Encode every peptide once per group. Shared by within/between-group functions.
+
+    :param peptides: Peptide strings to encode.
+    :type peptides: pd.DataFrame
+    :param autoencoder: Shared numerical model or deferred resource, as declared by the parameter type.
+    :type autoencoder: HydrAMPModel
+    :param encode_batch_size: Encode batch size.
+    :type encode_batch_size: int
+    :param nested_progress: Nested progress.
+    :type nested_progress: NestedProgress
+    :return: Result of this operation.
+    :rtype: dict[str, torch.Tensor]
+    """
     latents_by_group: dict[str, torch.Tensor] = {}
     for group_name, group_frame in peptides.groupby("group"):
         sequences = group_frame["sequence"].tolist()
@@ -220,10 +263,10 @@ def group_locality(
         largest per-chunk distance matrix ~370MB) -- unlike the MUTANG
         candidate-explosion OOM earlier this session, there is no risk of
         runaway allocation.
-    :param jacobian_mode: Required ``HydrampAutoencoder`` constructor
+    :param jacobian_mode: Required ``HydrAMPModel`` constructor
         argument; unused here since no Jacobian is computed.
-    :param jacobian_eps: Required ``HydrampAutoencoder`` constructor argument.
-    :param field_eps: Required ``HydrampAutoencoder`` constructor argument.
+    :param jacobian_eps: Required ``HydrAMPModel`` constructor argument.
+    :param field_eps: Required ``HydrAMPModel`` constructor argument.
     :param neighbor_count: Nearest neighbors computed per sampled member.
     :param neighbor_sample_size: Members sampled per group for the
         neighbor-distance computation.
@@ -235,6 +278,20 @@ def group_locality(
     :return: ``data`` holds ``neighbor_distance`` rows (one per sampled
         member per neighbor); ``diagnostics["centroid_distance"]`` holds one
         row per member.
+
+    :type peptides: pd.DataFrame
+    :type model_name: str
+    :type device: str
+    :type jacobian_mode: str
+    :type jacobian_eps: float
+    :type field_eps: float
+    :type neighbor_count: int
+    :type neighbor_sample_size: int
+    :type neighbor_query_batch: int
+    :type encode_batch_size: int
+    :type random_seed: int
+    :type progress: bool
+    :rtype: AnalysisResult
     """
     _validate_locality_inputs(
         peptides,
@@ -270,9 +327,9 @@ def group_locality(
         latents_tensor = torch.as_tensor(latents, device=device)
 
         centroid = latents_tensor.mean(dim=0)
-        centroid_distances = torch.linalg.norm(
-            latents_tensor - centroid, dim=-1
-        ).cpu().numpy()
+        centroid_distances = (
+            torch.linalg.norm(latents_tensor - centroid, dim=-1).cpu().numpy()
+        )
         centroid_frames.append(
             pd.DataFrame(
                 {
@@ -368,9 +425,9 @@ def between_group_distance(
         :func:`load_single_label_groups`.
     :param model_name: HydrAMP model name.
     :param device: Torch device for encoding and distance computation.
-    :param jacobian_mode: Required ``HydrampAutoencoder`` constructor argument.
-    :param jacobian_eps: Required ``HydrampAutoencoder`` constructor argument.
-    :param field_eps: Required ``HydrampAutoencoder`` constructor argument.
+    :param jacobian_mode: Required ``HydrAMPModel`` constructor argument.
+    :param jacobian_eps: Required ``HydrAMPModel`` constructor argument.
+    :param field_eps: Required ``HydrAMPModel`` constructor argument.
     :param neighbor_count: Nearest neighbors computed per sampled member.
     :param neighbor_sample_size: Members of ``a`` sampled per group pair.
     :param neighbor_query_batch: Sampled members processed per distance-matrix
@@ -382,6 +439,20 @@ def between_group_distance(
         tagged with ``group`` (the sampled member's own group) and
         ``other_group`` (the group its neighbors were found in);
         ``diagnostics["centroid_distance"]`` holds one row per ordered pair.
+
+    :type peptides: pd.DataFrame
+    :type model_name: str
+    :type device: str
+    :type jacobian_mode: str
+    :type jacobian_eps: float
+    :type field_eps: float
+    :type neighbor_count: int
+    :type neighbor_sample_size: int
+    :type neighbor_query_batch: int
+    :type encode_batch_size: int
+    :type random_seed: int
+    :type progress: bool
+    :rtype: AnalysisResult
     """
     _validate_locality_inputs(
         peptides,
@@ -458,7 +529,9 @@ def between_group_distance(
     neighbor_data = (
         pd.concat(neighbor_frames, ignore_index=True)
         if neighbor_frames
-        else pd.DataFrame(columns=["group", "other_group", "sequence", "neighbor_distance"])
+        else pd.DataFrame(
+            columns=["group", "other_group", "sequence", "neighbor_distance"]
+        )
     )
     centroid_data = pd.DataFrame(centroid_rows)
     return AnalysisResult(

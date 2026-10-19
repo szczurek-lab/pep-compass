@@ -8,8 +8,7 @@ mutation "jumps" rather than stays local.
 
 from __future__ import annotations
 
-import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
@@ -19,7 +18,13 @@ from pep_compass.analysis.analysis_types._encoding import encode_sequences
 from pep_compass.analysis.analysis_types.locality._streaming import NestedProgress
 from pep_compass.analysis.reader.selection import ExperimentSelection
 from pep_compass.analysis.result import AnalysisResult
-from pep_compass.autoencoder.strategies.hydramp.adapter import HydrampAutoencoder
+from pep_compass.autoencoder.strategies.hydramp.adapter import HydrAMPModel
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from pep_compass.data_schemas.candidates import CandidateBatch
+
 
 DISTANCE_KINDS = (
     "candidate_to_origin",
@@ -31,8 +36,15 @@ DISTANCE_KINDS = (
 def _levenshtein_distance(left: str, right: str) -> int:
     """Return the exact edit distance using one dynamic-programming row.
 
-    Duplicated rather than imported from the runtime's ``LevenshteinConstraint``
+    Duplicated rather than imported from the runtime's ``Levenshtein``
     filter: ``pep_compass.analysis`` never depends on the optimization engine.
+
+    :param left: Left.
+    :type left: str
+    :param right: Right.
+    :type right: str
+    :return: Result of this operation.
+    :rtype: int
     """
     if len(left) < len(right):
         left, right = right, left
@@ -52,20 +64,22 @@ def _levenshtein_distance(left: str, right: str) -> int:
 
 
 def _resolve_autoencoder_parameters(config: dict[str, Any]) -> dict[str, Any]:
-    """Extract standalone ``HydrampAutoencoder`` constructor arguments."""
-    autoencoder_config = config["autoencoder"]
-    if autoencoder_config["method"] != "hydramp":
-        raise ValueError(
-            "latent_jump only supports the hydramp autoencoder, got "
-            f"{autoencoder_config['method']!r}."
-        )
-    parameters = autoencoder_config["parameters"]
+    """Extract standalone ``HydrAMPModel`` constructor arguments.
+
+    :param config: Config.
+    :type config: dict[str, Any]
+    :return: Result of this operation.
+    :rtype: dict[str, Any]
+    """
+    autoencoder_config = config["schema"]["autoencoder"]
+    if autoencoder_config is None or not autoencoder_config["_target_"].endswith(
+        ".HydrAMP"
+    ):
+        raise ValueError("Locality analyses require a declared HydrAMP resource.")
     return {
-        "jacobian_mode": parameters["jacobian_mode"],
-        "jacobian_eps": parameters["jacobian_eps"],
-        "field_eps": parameters["field_eps"],
-        "model_name": autoencoder_config["model"],
-    }
+        key: autoencoder_config[key]
+        for key in ("jacobian_mode", "jacobian_eps", "field_eps")
+    } | {"model_name": autoencoder_config["model"]}
 
 
 def _match_sorbes_parents(
@@ -82,54 +96,63 @@ def _match_sorbes_parents(
     the walk point that produced it. This fallback is only used for older run
     outputs without ``lineage.parent_candidate_id``; current outputs resolve
     the parent directly by ID in :func:`_match_sorbes_parents_by_id`.
+
+    :param copied_latents: Copied latents.
+    :type copied_latents: np.ndarray
+    :param trajectory_points: Trajectory points.
+    :type trajectory_points: pd.DataFrame
+    :param trajectory_point_latents: Trajectory point latents.
+    :type trajectory_point_latents: np.ndarray
+    :param decimals: Decimals.
+    :type decimals: int
+    :return: Result of this operation.
+    :rtype: list[pd.Series | None]
     """
     lookup: dict[tuple[float, ...], pd.Series] = {}
     for position, vector in enumerate(trajectory_point_latents):
         key = tuple(np.round(vector, decimals))
         lookup.setdefault(key, trajectory_points.iloc[position])
-    return [
-        lookup.get(tuple(np.round(vector, decimals))) for vector in copied_latents
-    ]
+    return [lookup.get(tuple(np.round(vector, decimals))) for vector in copied_latents]
 
 
-def _read_candidate_lineage(
-    fields_path: Any,
-    candidate_count: int,
-) -> tuple[np.ndarray, np.ndarray | None]:
-    """Read MUTANG provenance and optional parent IDs from final candidate fields.
+def _read_candidate_lineage(batch: CandidateBatch) -> tuple[np.ndarray, object]:
+    """Read exact MUTANG provenance from the canonical aligned batch fields.
 
-    Only MUTANG output has ``mutation.parent_sequence`` attached, so its
-    presence/validity flag distinguishes candidate provenance in the final
-    result pool. Current outputs additionally store the exact lineage parent.
+    :param batch: Incoming aligned candidate batch.
+    :type batch: CandidateBatch
+    :return: Result of this operation.
+    :rtype: tuple[np.ndarray, object]
     """
-    mask = np.zeros(candidate_count, dtype=bool)
-    parent_ids = np.full(candidate_count, -1, dtype=np.int64)
-    has_parent_ids = False
-    with open(fields_path, encoding="utf-8") as handle:
-        for line in handle:
-            payload = json.loads(line)
-            candidate_index = int(payload["candidate_index"])
-            if not 0 <= candidate_index < candidate_count:
-                raise ValueError(
-                    "Candidate field index is outside the final candidate table: "
-                    f"{candidate_index}."
-                )
-            marker = payload["fields"].get("mutation.parent_sequence")
-            mask[candidate_index] = bool(
-                isinstance(marker, dict) and marker.get("valid")
-            )
-            parent_id = payload["fields"].get("lineage.parent_candidate_id")
-            if isinstance(parent_id, int) and not isinstance(parent_id, bool):
-                parent_ids[candidate_index] = parent_id
-                has_parent_ids = True
-    return mask, parent_ids if has_parent_ids else None
+    from pep_compass.data_schemas.candidates import (
+        ObjectField,
+        OptionalField,
+        TensorField,
+    )
+
+    marker = batch.fields.get("mutation.parent_sequence")
+    if isinstance(marker, OptionalField):
+        mask = marker.valid.cpu().numpy()
+    else:
+        mask = np.full(len(batch), isinstance(marker, ObjectField), dtype=bool)
+    parent = batch.fields.get("lineage.parent_candidate_id")
+    return mask, parent.values.cpu().numpy() if isinstance(
+        parent, TensorField
+    ) else None
 
 
 def _match_sorbes_parents_by_id(
     parent_ids: np.ndarray,
     trajectory_points: pd.DataFrame,
 ) -> list[pd.Series | None]:
-    """Resolve MUTANG parents against tracked SORBES candidates by lineage ID."""
+    """Resolve MUTANG parents against tracked SORBES candidates by lineage ID.
+
+    :param parent_ids: Parent ids.
+    :type parent_ids: np.ndarray
+    :param trajectory_points: Trajectory points.
+    :type trajectory_points: pd.DataFrame
+    :return: Result of this operation.
+    :rtype: list[pd.Series | None]
+    """
     if "candidate_id" not in trajectory_points:
         raise ValueError("Trajectory points do not contain candidate lineage IDs.")
     points_by_id: dict[int, pd.Series] = {}
@@ -175,6 +198,11 @@ def compute_outliers(
         not just far in absolute terms.
     :return: ``(outliers, frequency)``: the flagged rows sorted by distance,
         and per-group ``candidate_count``/``outlier_count``/``outlier_fraction``.
+
+    :type data: pd.DataFrame
+    :type group_columns: list[str]
+    :type outlier_iqr_multiplier: float
+    :rtype: tuple[pd.DataFrame, pd.DataFrame]
     """
     group_columns = list(group_columns)
     thresholds = (
@@ -231,22 +259,34 @@ def rank_by_jump_ratio(
         (``levenshtein_distance=0`` makes the ratio undefined).
     :return: Rows for ``distance_kind`` with a ``jump_ratio`` column, sorted
         descending -- the most disproportionate jumps first.
+
+    :type data: pd.DataFrame
+    :type distance_kind: str
+    :type minimum_levenshtein: int
+    :rtype: pd.DataFrame
     """
     subset = data[
         (data["distance_kind"] == distance_kind)
         & (data["levenshtein_distance"] >= minimum_levenshtein)
     ].copy()
-    subset["jump_ratio"] = (
-        subset["euclidean_distance"] / subset["levenshtein_distance"]
-    )
+    subset["jump_ratio"] = subset["euclidean_distance"] / subset["levenshtein_distance"]
     return subset.sort_values("jump_ratio", ascending=False).reset_index(drop=True)
 
 
-def _grid_value(config: dict[str, Any]) -> Any:
-    """Read the swept ``direction_significance_threshold`` from a run's config."""
-    return config["pipeline"]["steps"][0]["local_enumeration"]["mutation_generator"][
-        "parameters"
-    ]["direction_significance_threshold"]
+def _grid_value(config: Mapping[str, object]) -> float | None:
+    """Read the actual MUTANG direction threshold from the constructor snapshot.
+
+    :param config: Config.
+    :type config: Mapping[str, object]
+    :return: Result of this operation.
+    :rtype: float | None
+    """
+    from pep_compass.data_schemas.graph import PipelineSchema
+
+    for node, _, _ in PipelineSchema.from_dict(config["schema"]).walk():
+        if node.category == "mutation_generator":
+            return node.parameters.get("directions", {}).get("threshold")
+    return None
 
 
 def sorbes_trajectory_profile(selection: ExperimentSelection) -> AnalysisResult:
@@ -254,7 +294,7 @@ def sorbes_trajectory_profile(selection: ExperimentSelection) -> AnalysisResult:
 
     One row per ``(run, trajectory, iteration)``: no re-encoding, autoencoder,
     or MUTANG output involved -- purely genuine walker-produced latents from
-    ``tracking/trajectory_points.csv`` / ``trajectory_latents.pt``. Intended
+    the canonical trajectory payloads in ``results.sqlite``. Intended
     to answer "which seed sequences does SORBES actually move for" before
     interpreting any MUTANG-candidate distance analysis.
 
@@ -262,40 +302,45 @@ def sorbes_trajectory_profile(selection: ExperimentSelection) -> AnalysisResult:
     :return: One row per walk point, with ``euclidean_distance`` from the
         trajectory's original seed and its own ``trajectory_step`` (iteration
         index) for the x-axis.
+
+    :type selection: ExperimentSelection
+    :rtype: AnalysisResult
     """
     rows: list[dict[str, Any]] = []
     for run in selection.runs:
-        replay = selection.reader.replay(run.run_id)
-        local_enumerations = replay.local_enumerations
-        if local_enumerations.empty:
-            continue
-        entry_execution_id = int(local_enumerations.iloc[0]["execution_id"])
-        origin_sequences, origin_latents = replay.local_enumeration_input(
-            entry_execution_id
-        )
-        origin_sequence = origin_sequences[0]
-        origin_latent = origin_latents[0].numpy()
-
-        points = replay.trajectory_points
-        point_latents_full = replay.trajectory_latents.numpy()
-        point_latents = point_latents_full[points["latent_index"].to_numpy()]
-        moved = points["sequence"].nunique() > 1
-        for (_, point), latent in zip(points.iterrows(), point_latents):
-            rows.append(
-                {
-                    "run_id": run.run_id,
-                    "grid_value": _grid_value(run.config),
-                    "seed_sequence": origin_sequence,
-                    "sorbes_moved": moved,
-                    "trajectory_id": point["trajectory_id"],
-                    "trajectory_index": int(point["trajectory_index"]),
-                    "trajectory_step": int(point["trajectory_step"]),
-                    "euclidean_distance": float(
-                        np.linalg.norm(latent - origin_latent)
-                    ),
-                    "sequence": point["sequence"],
-                }
+        with selection.reader.replay(run.run_id) as replay:
+            local_enumerations = replay.get_checkpoints()
+            if local_enumerations.empty:
+                continue
+            entry_execution_id = int(local_enumerations.iloc[0]["execution_id"])
+            origin_batch = replay.get_boundary_input(entry_execution_id)
+            origin_sequences, origin_latents = (
+                origin_batch.sequences,
+                origin_batch.latent_origins,
             )
+            origin_sequence = origin_sequences[0]
+            origin_latent = origin_latents[0].numpy()
+
+            points, point_latents_tensor = replay.get_trajectories()
+            point_latents_full = point_latents_tensor.numpy()
+            point_latents = point_latents_full[points["latent_index"].to_numpy()]
+            moved = points["sequence"].nunique() > 1
+            for (_, point), latent in zip(points.iterrows(), point_latents):
+                rows.append(
+                    {
+                        "run_id": run.run_id,
+                        "grid_value": _grid_value(run.config),
+                        "seed_sequence": origin_sequence,
+                        "sorbes_moved": moved,
+                        "trajectory_id": point["trajectory_id"],
+                        "trajectory_index": int(point["trajectory_index"]),
+                        "trajectory_step": int(point["trajectory_step"]),
+                        "euclidean_distance": float(
+                            np.linalg.norm(latent - origin_latent)
+                        ),
+                        "sequence": point["sequence"],
+                    }
+                )
     data = pd.DataFrame(rows)
     return AnalysisResult(
         data,
@@ -377,6 +422,17 @@ def latent_jump(
         ``diagnostics``.
     :raises ValueError: If selected runs use different autoencoder
         configurations or a non-hydramp autoencoder.
+
+    :type selection: ExperimentSelection
+    :type levenshtein_bins: tuple[int, ...]
+    :type outlier_iqr_multiplier: float
+    :type candidate_sample_size: int | None
+    :type encode_batch_size: int
+    :type match_decimals: int
+    :type random_seed: int
+    :type device: str
+    :type progress: bool
+    :rtype: AnalysisResult
     """
     empty_metadata = {"analysis": "latent_jump", "run_count": 0}
     if not selection.runs:
@@ -389,7 +445,7 @@ def latent_jump(
                 "latent_jump requires every selected run to share one "
                 "autoencoder configuration."
             )
-    autoencoder = HydrampAutoencoder(device=device, **autoencoder_parameters)
+    autoencoder = HydrAMPModel(device=device, **autoencoder_parameters)
     autoencoder = autoencoder.to(device).eval()
 
     levenshtein_bins = tuple(sorted(set(levenshtein_bins)))
@@ -399,22 +455,23 @@ def latent_jump(
     # overall progress bar has a real total before any encoding starts.
     planned: dict[str, tuple[np.ndarray, np.ndarray | None]] = {}
     for run in selection.runs:
-        replay = selection.reader.replay(run.run_id)
-        final_candidates = replay.final_candidates
-        is_mutang, parent_ids = _read_candidate_lineage(
-            replay.root / "fields.jsonl", len(final_candidates)
-        )
-        mutang_indices = np.flatnonzero(is_mutang)
-        if (
-            candidate_sample_size is not None
-            and len(mutang_indices) > candidate_sample_size
-        ):
-            mutang_indices = rng.choice(
-                mutang_indices, size=candidate_sample_size, replace=False
-            )
-        planned[run.run_id] = (mutang_indices, parent_ids)
+        with selection.reader.replay(run.run_id) as replay:
+            final_batch = replay.get_final_batch()
+            final_candidates = pd.DataFrame({"sequence": final_batch.sequences})
+            is_mutang, parent_ids = _read_candidate_lineage(final_batch)
+            mutang_indices = np.flatnonzero(is_mutang)
+            if (
+                candidate_sample_size is not None
+                and len(mutang_indices) > candidate_sample_size
+            ):
+                mutang_indices = rng.choice(
+                    mutang_indices, size=candidate_sample_size, replace=False
+                )
+            planned[run.run_id] = (mutang_indices, parent_ids)
     overall_total = sum(len(indices) for indices, _ in planned.values())
-    nested_progress = NestedProgress("latent_jump:encode", overall_total, enabled=progress)
+    nested_progress = NestedProgress(
+        "latent_jump:encode", overall_total, enabled=progress
+    )
 
     rows: list[dict[str, Any]] = []
     total_walk_points = 0
@@ -424,112 +481,119 @@ def latent_jump(
     latent_parent_matches = 0
 
     for run in selection.runs:
-        replay = selection.reader.replay(run.run_id)
-        grid_value = _grid_value(run.config)
+        with selection.reader.replay(run.run_id) as replay:
+            grid_value = _grid_value(run.config)
 
-        local_enumerations = replay.local_enumerations
-        if local_enumerations.empty:
-            continue
-        entry_execution_id = int(local_enumerations.iloc[0]["execution_id"])
-        origin_sequences, origin_latents = replay.local_enumeration_input(
-            entry_execution_id
-        )
-        origin_sequence = origin_sequences[0]
-        origin_latent = origin_latents[0].numpy()
-
-        points = replay.trajectory_points
-        point_latents_full = replay.trajectory_latents.numpy()
-        point_latents = point_latents_full[points["latent_index"].to_numpy()]
-        sorbes_moved = points["sequence"].nunique() > 1
-        for sequence, latent, trajectory_step in zip(
-            points["sequence"], point_latents, points["trajectory_step"]
-        ):
-            rows.append(
-                {
-                    "run_id": run.run_id,
-                    "grid_value": grid_value,
-                    "sorbes_moved": sorbes_moved,
-                    "distance_kind": "sorbes_to_origin",
-                    "trajectory_step": int(trajectory_step),
-                    "levenshtein_distance": _levenshtein_distance(
-                        sequence, origin_sequence
-                    ),
-                    "euclidean_distance": float(
-                        np.linalg.norm(latent - origin_latent)
-                    ),
-                    "sequence": sequence,
-                }
-            )
-        total_walk_points += len(points)
-
-        mutang_indices, parent_ids = planned[run.run_id]
-        if len(mutang_indices) == 0:
-            continue
-        total_candidates_analyzed += len(mutang_indices)
-
-        final_candidates = replay.final_candidates
-        final_latents = replay.final_latents.numpy()
-        sequences = final_candidates["sequence"].to_numpy()[mutang_indices]
-        copied_latents = final_latents[mutang_indices]
-        if parent_ids is not None and "candidate_id" in points:
-            matched_parents = _match_sorbes_parents_by_id(
-                parent_ids[mutang_indices], points
-            )
-            lineage_parent_matches += sum(parent is not None for parent in matched_parents)
-        else:
-            matched_parents = _match_sorbes_parents(
-                copied_latents, points, point_latents, match_decimals
-            )
-            latent_parent_matches += sum(parent is not None for parent in matched_parents)
-
-        nested_progress.start_stage(run.run_id, len(sequences))
-        true_latents = encode_sequences(
-            autoencoder, list(sequences), encode_batch_size, nested_progress
-        )
-
-        for sequence, true_latent, copied_latent, parent in zip(
-            sequences, true_latents, copied_latents, matched_parents
-        ):
-            # The candidate was generated at its parent SORBES point's
-            # iteration -- both candidate rows share that trajectory_step.
-            generating_step = (
-                int(parent["trajectory_step"]) if parent is not None else None
-            )
-            rows.append(
-                {
-                    "run_id": run.run_id,
-                    "grid_value": grid_value,
-                    "sorbes_moved": sorbes_moved,
-                    "distance_kind": "candidate_to_origin",
-                    "trajectory_step": generating_step,
-                    "levenshtein_distance": _levenshtein_distance(
-                        sequence, origin_sequence
-                    ),
-                    "euclidean_distance": float(
-                        np.linalg.norm(true_latent - origin_latent)
-                    ),
-                    "sequence": sequence,
-                }
-            )
-            if parent is None:
-                unmatched_parents += 1
+            local_enumerations = replay.get_checkpoints()
+            if local_enumerations.empty:
                 continue
-            rows.append(
-                {
-                    "run_id": run.run_id,
-                    "grid_value": grid_value,
-                    "sorbes_moved": sorbes_moved,
-                    "distance_kind": "candidate_to_sorbes_parent",
-                    "trajectory_step": generating_step,
-                    "levenshtein_distance": _levenshtein_distance(
-                        sequence, str(parent["sequence"])
-                    ),
-                    "euclidean_distance": float(
-                        np.linalg.norm(true_latent - copied_latent)
-                    ),
-                    "sequence": sequence,
-                }
+            entry_execution_id = int(local_enumerations.iloc[0]["execution_id"])
+            origin_batch = replay.get_boundary_input(entry_execution_id)
+            origin_sequences, origin_latents = (
+                origin_batch.sequences,
+                origin_batch.latent_origins,
             )
+            origin_sequence = origin_sequences[0]
+            origin_latent = origin_latents[0].numpy()
+
+            points, point_latents_tensor = replay.get_trajectories()
+            point_latents_full = point_latents_tensor.numpy()
+            point_latents = point_latents_full[points["latent_index"].to_numpy()]
+            sorbes_moved = points["sequence"].nunique() > 1
+            for sequence, latent, trajectory_step in zip(
+                points["sequence"], point_latents, points["trajectory_step"]
+            ):
+                rows.append(
+                    {
+                        "run_id": run.run_id,
+                        "grid_value": grid_value,
+                        "sorbes_moved": sorbes_moved,
+                        "distance_kind": "sorbes_to_origin",
+                        "trajectory_step": int(trajectory_step),
+                        "levenshtein_distance": _levenshtein_distance(
+                            sequence, origin_sequence
+                        ),
+                        "euclidean_distance": float(
+                            np.linalg.norm(latent - origin_latent)
+                        ),
+                        "sequence": sequence,
+                    }
+                )
+            total_walk_points += len(points)
+
+            mutang_indices, parent_ids = planned[run.run_id]
+            if len(mutang_indices) == 0:
+                continue
+            total_candidates_analyzed += len(mutang_indices)
+
+            final_batch = replay.get_final_batch()
+            final_candidates = pd.DataFrame({"sequence": final_batch.sequences})
+            final_latents = final_batch.latent_origins.numpy()
+            sequences = final_candidates["sequence"].to_numpy()[mutang_indices]
+            copied_latents = final_latents[mutang_indices]
+            if parent_ids is not None and "candidate_id" in points:
+                matched_parents = _match_sorbes_parents_by_id(
+                    parent_ids[mutang_indices], points
+                )
+                lineage_parent_matches += sum(
+                    parent is not None for parent in matched_parents
+                )
+            else:
+                matched_parents = _match_sorbes_parents(
+                    copied_latents, points, point_latents, match_decimals
+                )
+                latent_parent_matches += sum(
+                    parent is not None for parent in matched_parents
+                )
+
+            nested_progress.start_stage(run.run_id, len(sequences))
+            true_latents = encode_sequences(
+                autoencoder, list(sequences), encode_batch_size, nested_progress
+            )
+
+            for sequence, true_latent, copied_latent, parent in zip(
+                sequences, true_latents, copied_latents, matched_parents
+            ):
+                # The candidate was generated at its parent SORBES point's
+                # iteration -- both candidate rows share that trajectory_step.
+                generating_step = (
+                    int(parent["trajectory_step"]) if parent is not None else None
+                )
+                rows.append(
+                    {
+                        "run_id": run.run_id,
+                        "grid_value": grid_value,
+                        "sorbes_moved": sorbes_moved,
+                        "distance_kind": "candidate_to_origin",
+                        "trajectory_step": generating_step,
+                        "levenshtein_distance": _levenshtein_distance(
+                            sequence, origin_sequence
+                        ),
+                        "euclidean_distance": float(
+                            np.linalg.norm(true_latent - origin_latent)
+                        ),
+                        "sequence": sequence,
+                    }
+                )
+                if parent is None:
+                    unmatched_parents += 1
+                    continue
+                rows.append(
+                    {
+                        "run_id": run.run_id,
+                        "grid_value": grid_value,
+                        "sorbes_moved": sorbes_moved,
+                        "distance_kind": "candidate_to_sorbes_parent",
+                        "trajectory_step": generating_step,
+                        "levenshtein_distance": _levenshtein_distance(
+                            sequence, str(parent["sequence"])
+                        ),
+                        "euclidean_distance": float(
+                            np.linalg.norm(true_latent - copied_latent)
+                        ),
+                        "sequence": sequence,
+                    }
+                )
 
     data = pd.DataFrame(rows)
     if data.empty:
@@ -560,11 +624,21 @@ def latent_jump(
 
 
 def _decode_batched(
-    autoencoder: HydrampAutoencoder,
+    autoencoder: HydrAMPModel,
     latents: torch.Tensor,
     batch_size: int,
 ) -> torch.Tensor:
-    """Decode latent positions into ambient (softmax) vectors, batched."""
+    """Decode latent positions into ambient (softmax) vectors, batched.
+
+    :param autoencoder: Shared numerical model or deferred resource, as declared by the parameter type.
+    :type autoencoder: HydrAMPModel
+    :param latents: Latents.
+    :type latents: torch.Tensor
+    :param batch_size: Batch size.
+    :type batch_size: int
+    :return: Result of this operation.
+    :rtype: torch.Tensor
+    """
     outputs = []
     for start in range(0, latents.shape[0], batch_size):
         outputs.append(autoencoder.decoder_forward(latents[start : start + batch_size]))
@@ -592,7 +666,7 @@ def ambient_jump(
     latent positions (``z``) -- a quantity that never depends on the
     decoder's target condition ``c = (c_AMP, c_MIC)``, since HydrAMP's
     encoder never sees ``c`` (only the decoder does -- see
-    ``HydrampAutoencoder.decoder_forward``, which appends
+    ``HydrAMPModel.decoder_forward``, which appends
     ``self.default_condition`` to its input). This instead decodes the SAME
     latent pairs :func:`latent_jump` compares (candidate vs. trajectory
     origin, candidate vs. its generating SORBES point) into the decoder's
@@ -624,6 +698,18 @@ def ambient_jump(
         ``condition``, so the two are directly comparable row by row.
     :raises ValueError: If selected runs use different autoencoder
         configurations or a non-hydramp autoencoder.
+
+    :type selection: ExperimentSelection
+    :type conditions: dict[str, tuple[float, float]] | None
+    :type levenshtein_bins: tuple[int, ...]
+    :type candidate_sample_size: int | None
+    :type encode_batch_size: int
+    :type decode_batch_size: int
+    :type match_decimals: int
+    :type random_seed: int
+    :type device: str
+    :type progress: bool
+    :rtype: AnalysisResult
     """
     if conditions is None:
         conditions = {
@@ -643,7 +729,7 @@ def ambient_jump(
                 "ambient_jump requires every selected run to share one "
                 "autoencoder configuration."
             )
-    autoencoder = HydrampAutoencoder(device=device, **autoencoder_parameters)
+    autoencoder = HydrAMPModel(device=device, **autoencoder_parameters)
     autoencoder = autoencoder.to(device).eval()
 
     levenshtein_bins = tuple(sorted(set(levenshtein_bins)))
@@ -654,20 +740,19 @@ def ambient_jump(
     # up front, so the overall progress bar has a real total.
     planned: dict[str, tuple[np.ndarray, np.ndarray | None]] = {}
     for run in selection.runs:
-        replay = selection.reader.replay(run.run_id)
-        final_candidates = replay.final_candidates
-        is_mutang, parent_ids = _read_candidate_lineage(
-            replay.root / "fields.jsonl", len(final_candidates)
-        )
-        mutang_indices = np.flatnonzero(is_mutang)
-        if (
-            candidate_sample_size is not None
-            and len(mutang_indices) > candidate_sample_size
-        ):
-            mutang_indices = rng.choice(
-                mutang_indices, size=candidate_sample_size, replace=False
-            )
-        planned[run.run_id] = (mutang_indices, parent_ids)
+        with selection.reader.replay(run.run_id) as replay:
+            final_batch = replay.get_final_batch()
+            final_candidates = pd.DataFrame({"sequence": final_batch.sequences})
+            is_mutang, parent_ids = _read_candidate_lineage(final_batch)
+            mutang_indices = np.flatnonzero(is_mutang)
+            if (
+                candidate_sample_size is not None
+                and len(mutang_indices) > candidate_sample_size
+            ):
+                mutang_indices = rng.choice(
+                    mutang_indices, size=candidate_sample_size, replace=False
+                )
+            planned[run.run_id] = (mutang_indices, parent_ids)
     overall_total = sum(len(indices) for indices, _ in planned.values())
     nested_progress = NestedProgress(
         "ambient_jump:encode", overall_total, enabled=progress
@@ -677,124 +762,141 @@ def ambient_jump(
     unmatched_parents = 0
 
     for run in selection.runs:
-        replay = selection.reader.replay(run.run_id)
-        grid_value = _grid_value(run.config)
+        with selection.reader.replay(run.run_id) as replay:
+            grid_value = _grid_value(run.config)
 
-        local_enumerations = replay.local_enumerations
-        if local_enumerations.empty:
-            continue
-        entry_execution_id = int(local_enumerations.iloc[0]["execution_id"])
-        origin_sequences, origin_latents = replay.local_enumeration_input(
-            entry_execution_id
-        )
-        origin_sequence = origin_sequences[0]
-        origin_latent = origin_latents[0].numpy()
-        origin_latent_tensor = torch.as_tensor(
-            origin_latent, device=device, dtype=torch.float32
-        ).unsqueeze(0)
-
-        points = replay.trajectory_points
-        point_latents_full = replay.trajectory_latents.numpy()
-        point_latents = point_latents_full[points["latent_index"].to_numpy()]
-        sorbes_moved = points["sequence"].nunique() > 1
-
-        mutang_indices, parent_ids = planned[run.run_id]
-        if len(mutang_indices) == 0:
-            continue
-
-        final_candidates = replay.final_candidates
-        final_latents = replay.final_latents.numpy()
-        sequences = final_candidates["sequence"].to_numpy()[mutang_indices]
-        copied_latents = final_latents[mutang_indices]
-        if parent_ids is not None and "candidate_id" in points:
-            matched_parents = _match_sorbes_parents_by_id(
-                parent_ids[mutang_indices], points
+            local_enumerations = replay.get_checkpoints()
+            if local_enumerations.empty:
+                continue
+            entry_execution_id = int(local_enumerations.iloc[0]["execution_id"])
+            origin_batch = replay.get_boundary_input(entry_execution_id)
+            origin_sequences, origin_latents = (
+                origin_batch.sequences,
+                origin_batch.latent_origins,
             )
-        else:
-            matched_parents = _match_sorbes_parents(
-                copied_latents, points, point_latents, match_decimals
+            origin_sequence = origin_sequences[0]
+            origin_latent = origin_latents[0].numpy()
+            origin_latent_tensor = torch.as_tensor(
+                origin_latent, device=device, dtype=torch.float32
+            ).unsqueeze(0)
+
+            points, point_latents_tensor = replay.get_trajectories()
+            point_latents_full = point_latents_tensor.numpy()
+            point_latents = point_latents_full[points["latent_index"].to_numpy()]
+            sorbes_moved = points["sequence"].nunique() > 1
+
+            mutang_indices, parent_ids = planned[run.run_id]
+            if len(mutang_indices) == 0:
+                continue
+
+            final_batch = replay.get_final_batch()
+            final_candidates = pd.DataFrame({"sequence": final_batch.sequences})
+            final_latents = final_batch.latent_origins.numpy()
+            sequences = final_candidates["sequence"].to_numpy()[mutang_indices]
+            copied_latents = final_latents[mutang_indices]
+            if parent_ids is not None and "candidate_id" in points:
+                matched_parents = _match_sorbes_parents_by_id(
+                    parent_ids[mutang_indices], points
+                )
+            else:
+                matched_parents = _match_sorbes_parents(
+                    copied_latents, points, point_latents, match_decimals
+                )
+
+            nested_progress.start_stage(run.run_id, len(sequences))
+            true_latents = encode_sequences(
+                autoencoder, list(sequences), encode_batch_size, nested_progress
+            )
+            true_latents_tensor = torch.as_tensor(
+                true_latents, device=device, dtype=torch.float32
+            )
+            copied_latents_tensor = torch.as_tensor(
+                copied_latents, device=device, dtype=torch.float32
             )
 
-        nested_progress.start_stage(run.run_id, len(sequences))
-        true_latents = encode_sequences(
-            autoencoder, list(sequences), encode_batch_size, nested_progress
-        )
-        true_latents_tensor = torch.as_tensor(
-            true_latents, device=device, dtype=torch.float32
-        )
-        copied_latents_tensor = torch.as_tensor(
-            copied_latents, device=device, dtype=torch.float32
-        )
+            for condition_name, condition_values in conditions.items():
+                autoencoder.default_condition = torch.tensor(
+                    condition_values, device=device, dtype=torch.float32
+                )
+                with torch.no_grad():
+                    ambient_candidates = _decode_batched(
+                        autoencoder, true_latents_tensor, decode_batch_size
+                    )
+                    ambient_origin = autoencoder.decoder_forward(origin_latent_tensor)[
+                        0
+                    ]
+                    ambient_parents = _decode_batched(
+                        autoencoder, copied_latents_tensor, decode_batch_size
+                    )
 
-        for condition_name, condition_values in conditions.items():
-            autoencoder.default_condition = torch.tensor(
-                condition_values, device=device, dtype=torch.float32
-            )
-            with torch.no_grad():
-                ambient_candidates = _decode_batched(
-                    autoencoder, true_latents_tensor, decode_batch_size
-                )
-                ambient_origin = autoencoder.decoder_forward(origin_latent_tensor)[0]
-                ambient_parents = _decode_batched(
-                    autoencoder, copied_latents_tensor, decode_batch_size
-                )
-
-            for index, (candidate_index, sequence, true_latent, copied_latent, parent) in enumerate(
-                zip(mutang_indices, sequences, true_latents, copied_latents, matched_parents)
-            ):
-                # candidate_index (the row's position in final_candidates) is
-                # the correct group key for "the same candidate across
-                # conditions" -- distinct candidates can share sequence text
-                # (MUTANG can independently produce the same string from
-                # different parents/positions), so grouping by sequence alone
-                # silently conflates unrelated rows.
-                rows.append(
-                    {
-                        "run_id": run.run_id,
-                        "grid_value": grid_value,
-                        "sorbes_moved": sorbes_moved,
-                        "condition": condition_name,
-                        "distance_kind": "candidate_to_origin",
-                        "candidate_index": int(candidate_index),
-                        "levenshtein_distance": _levenshtein_distance(
-                            sequence, origin_sequence
-                        ),
-                        "latent_distance": float(
-                            np.linalg.norm(true_latent - origin_latent)
-                        ),
-                        "ambient_distance": float(
-                            torch.linalg.norm(
-                                ambient_candidates[index] - ambient_origin
-                            ).item()
-                        ),
-                        "sequence": sequence,
-                    }
-                )
-                if parent is None:
-                    unmatched_parents += 1
-                    continue
-                rows.append(
-                    {
-                        "run_id": run.run_id,
-                        "grid_value": grid_value,
-                        "sorbes_moved": sorbes_moved,
-                        "condition": condition_name,
-                        "distance_kind": "candidate_to_sorbes_parent",
-                        "candidate_index": int(candidate_index),
-                        "levenshtein_distance": _levenshtein_distance(
-                            sequence, str(parent["sequence"])
-                        ),
-                        "latent_distance": float(
-                            np.linalg.norm(true_latent - copied_latent)
-                        ),
-                        "ambient_distance": float(
-                            torch.linalg.norm(
-                                ambient_candidates[index] - ambient_parents[index]
-                            ).item()
-                        ),
-                        "sequence": sequence,
-                    }
-                )
+                for index, (
+                    candidate_index,
+                    sequence,
+                    true_latent,
+                    copied_latent,
+                    parent,
+                ) in enumerate(
+                    zip(
+                        mutang_indices,
+                        sequences,
+                        true_latents,
+                        copied_latents,
+                        matched_parents,
+                    )
+                ):
+                    # candidate_index (the row's position in final_candidates) is
+                    # the correct group key for "the same candidate across
+                    # conditions" -- distinct candidates can share sequence text
+                    # (MUTANG can independently produce the same string from
+                    # different parents/positions), so grouping by sequence alone
+                    # silently conflates unrelated rows.
+                    rows.append(
+                        {
+                            "run_id": run.run_id,
+                            "grid_value": grid_value,
+                            "sorbes_moved": sorbes_moved,
+                            "condition": condition_name,
+                            "distance_kind": "candidate_to_origin",
+                            "candidate_index": int(candidate_index),
+                            "levenshtein_distance": _levenshtein_distance(
+                                sequence, origin_sequence
+                            ),
+                            "latent_distance": float(
+                                np.linalg.norm(true_latent - origin_latent)
+                            ),
+                            "ambient_distance": float(
+                                torch.linalg.norm(
+                                    ambient_candidates[index] - ambient_origin
+                                ).item()
+                            ),
+                            "sequence": sequence,
+                        }
+                    )
+                    if parent is None:
+                        unmatched_parents += 1
+                        continue
+                    rows.append(
+                        {
+                            "run_id": run.run_id,
+                            "grid_value": grid_value,
+                            "sorbes_moved": sorbes_moved,
+                            "condition": condition_name,
+                            "distance_kind": "candidate_to_sorbes_parent",
+                            "candidate_index": int(candidate_index),
+                            "levenshtein_distance": _levenshtein_distance(
+                                sequence, str(parent["sequence"])
+                            ),
+                            "latent_distance": float(
+                                np.linalg.norm(true_latent - copied_latent)
+                            ),
+                            "ambient_distance": float(
+                                torch.linalg.norm(
+                                    ambient_candidates[index] - ambient_parents[index]
+                                ).item()
+                            ),
+                            "sequence": sequence,
+                        }
+                    )
 
     data = pd.DataFrame(rows)
     if data.empty:

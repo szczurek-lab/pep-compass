@@ -2,17 +2,28 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 from pep_compass.analysis.result import AnalysisResult
 from pep_compass.analysis.visualization.theme import PlotTheme
 
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
 
 class LocalityVisualizer:
     """Render locality results using one shared theme."""
 
     def __init__(self, theme: PlotTheme) -> None:
+        """Initialize this object with the declared configuration.
+
+        :param theme: Theme.
+        :type theme: PlotTheme
+        :rtype: None
+        """
         self.theme = theme
 
     @staticmethod
@@ -25,6 +36,9 @@ class LocalityVisualizer:
         before displaying when the figures need to be visually comparable.
 
         :param figures: A ``{key: Axes}`` mapping, e.g. one method's return value.
+
+        :type figures: dict
+        :rtype: None
         """
         axes_list = list(figures.values())
         if not axes_list:
@@ -34,14 +48,21 @@ class LocalityVisualizer:
         for axes in axes_list:
             axes.set_ylim(bottom, top)
 
-    def _axes(self):
+    def _axes(self) -> tuple[object, object]:
+        """Axes.
+
+        :return: Result of this operation.
+        :rtype: tuple[object, object]
+        """
         with sns.axes_style(self.theme.style), sns.plotting_context(self.theme.context):
             figure, axes = plt.subplots(
                 figsize=self.theme.figure_size, dpi=self.theme.dpi
             )
         return figure, axes
 
-    def latent_jump(self, result: AnalysisResult) -> dict[tuple[bool, object], "plt.Axes"]:
+    def latent_jump(
+        self, result: AnalysisResult
+    ) -> dict[tuple[bool, object], "plt.Axes"]:
         """Plot Euclidean latent distance vs. Levenshtein distance, one figure
         per ``(sorbes_moved, grid_value)`` combination.
 
@@ -55,6 +76,9 @@ class LocalityVisualizer:
 
         :param result: Output of ``LocalityAnalysis.latent_jump``.
         :return: Mapping from ``(sorbes_moved, grid_value)`` to its ``Axes``.
+
+        :type result: AnalysisResult
+        :rtype: dict[tuple[bool, object], 'plt.Axes']
         """
         data = result.data
         if data.empty:
@@ -71,8 +95,9 @@ class LocalityVisualizer:
         for (sorbes_moved, grid_value), panel in data.groupby(
             ["sorbes_moved", "grid_value"], dropna=False, sort=True
         ):
-            with sns.axes_style(self.theme.style), sns.plotting_context(
-                self.theme.context
+            with (
+                sns.axes_style(self.theme.style),
+                sns.plotting_context(self.theme.context),
             ):
                 figure, axes = plt.subplots(
                     figsize=(
@@ -122,6 +147,9 @@ class LocalityVisualizer:
 
         :param result: Output of ``LocalityAnalysis.latent_jump``.
         :return: Mapping from ``(sorbes_moved, grid_value)`` to its ``Axes``.
+
+        :type result: AnalysisResult
+        :rtype: dict[tuple[bool, object], 'plt.Axes']
         """
         data = result.data.dropna(subset=["trajectory_step"])
         if data.empty:
@@ -135,8 +163,9 @@ class LocalityVisualizer:
         for (sorbes_moved, grid_value), panel in data.groupby(
             ["sorbes_moved", "grid_value"], dropna=False, sort=True
         ):
-            with sns.axes_style(self.theme.style), sns.plotting_context(
-                self.theme.context
+            with (
+                sns.axes_style(self.theme.style),
+                sns.plotting_context(self.theme.context),
             ):
                 figure, axes = plt.subplots(
                     figsize=(
@@ -173,7 +202,7 @@ class LocalityVisualizer:
             figures[(sorbes_moved, grid_value)] = axes
         return figures
 
-    def sorbes_trajectory_profile(self, result: AnalysisResult):
+    def sorbes_trajectory_profile(self, result: AnalysisResult) -> Axes:
         """Plot each trajectory's latent drift from its origin, by iteration.
 
         One thin line per trajectory (``units="trajectory_id"``, unaggregated),
@@ -181,6 +210,10 @@ class LocalityVisualizer:
         as flat-vs-rising line bundles at a glance.
 
         :param result: Output of ``LocalityAnalysis.sorbes_trajectory_profile``.
+
+        :type result: AnalysisResult
+        :return: Result of this operation.
+        :rtype: Axes
         """
         data = result.data
         if data.empty:
@@ -205,7 +238,7 @@ class LocalityVisualizer:
         axes.legend(title="seed", loc="upper left", fontsize="small")
         return axes
 
-    def ambient_jump(self, result: AnalysisResult):
+    def ambient_jump(self, result: AnalysisResult) -> Axes:
         """Plot latent- vs. ambient-space distance by decode condition, side by side.
 
         Two panels sharing one y-axis: left is ``latent_distance`` by
@@ -221,6 +254,9 @@ class LocalityVisualizer:
             ``ambient_distance`` decoded under every named ``condition``,
             split by ``distance_kind``.
         :return: The two-panel ``Axes`` array (``[latent, ambient]``).
+
+        :type result: AnalysisResult
+        :rtype: Axes
         """
         data = result.data
         if data.empty:
@@ -242,7 +278,11 @@ class LocalityVisualizer:
                 constrained_layout=True,
             )
         panels = (
-            (axes[0], "latent_distance", "Latent distance (control -- should not vary)"),
+            (
+                axes[0],
+                "latent_distance",
+                "Latent distance (control -- should not vary)",
+            ),
             (axes[1], "ambient_distance", "Ambient (decoder-output) distance"),
         )
         for panel_axes, column, title in panels:

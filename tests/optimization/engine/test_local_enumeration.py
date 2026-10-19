@@ -1,12 +1,13 @@
 """Tests for trajectory-isolated local enumeration."""
 
-import torch
 import pytest
+import torch
 
-from pep_compass.data.optimization import CandidateBatch
+from pep_compass.data_schemas.candidates import CandidateBatch
 from pep_compass.optimization.engine.execution.context import OptimizationContext
-from pep_compass.optimization.engine.operations import Flow, LocalEnumeration
-from pep_compass.optimization.pipeline import PepCompassPipeline
+from pep_compass.optimization.engine.pipeline import ExecutablePipeline
+from pep_compass.steps.flow import LocalEnumeration
+from pep_compass.steps.flow.strategies.sequence import Flow
 from tests.fixtures.autoencoders import MockAutoencoder
 from tests.fixtures.components import SuffixStep
 
@@ -30,10 +31,16 @@ class PairGenerator(SuffixStep):
         super().__init__("")
 
     def _execute(self, batch, context):
-        indices = torch.arange(len(batch), device=batch.latent_origins.device).repeat_interleave(2)
+        indices = torch.arange(
+            len(batch), device=batch.latent_origins.device
+        ).repeat_interleave(2)
         expanded = batch.repeat_from_parents(indices)
         return expanded.with_sequences(
-            [f"{sequence}{suffix}" for sequence in batch.sequences for suffix in ("A", "B")]
+            [
+                f"{sequence}{suffix}"
+                for sequence in batch.sequences
+                for suffix in ("A", "B")
+            ]
         )
 
 
@@ -129,11 +136,13 @@ def test_batched_trajectories_are_independent_and_seed_reproducible() -> None:
         walk_time=None,
         include_walk_points=False,
     )
-    pipeline = PepCompassPipeline(autoencoder=MockAutoencoder(), root=operation)
+    pipeline = ExecutablePipeline(
+        schema=None, autoencoder=MockAutoencoder(), root=operation
+    )
 
-    first = pipeline.run(["S"], seed=1234).candidates.sequences
-    second = pipeline.run(["S"], seed=1234).candidates.sequences
-    different_seed = pipeline.run(["S"], seed=1235).candidates.sequences
+    first = pipeline._run(["S"], seed=1234).sequences
+    second = pipeline._run(["S"], seed=1234).sequences
+    different_seed = pipeline._run(["S"], seed=1235).sequences
 
     assert first == second
     assert first != different_seed

@@ -6,6 +6,15 @@ calibration. They implement the source restrictions in
 records, infer peptide sequences, convert units, or construct model-ready
 tables.
 
+Peptide half-life acquisition is now owned by
+[`half_time_data`](../half_time_data/README.md), with canonical files under
+`data/half_time_datasets`. The existing registry keys `peplife2_serum`,
+`peplife2_plasma`, and `dramp_stability` route to that downloader. The updated
+`0_data_analysis_half_life` contains source overviews and the PEPlife2 protocol; canonical compatibility views remain available for existing calibration;
+`3_01_time_axis_calibration.ipynb` also uses the canonical baseline; other serum
+notebooks keep their existing inputs. Legacy raw half-life files
+are retained for historical analyses and are not removed or overwritten.
+
 The source registry is kept with the acquisition code at
 `config/serum_sources.yaml`. This directory is self-contained; no repository-
 level configuration file is required.
@@ -44,14 +53,16 @@ data/serum_proteolysis_calibration/
     ├── dpp4_qpisa/
     ├── qmsp_ms/
     ├── adamts13/
-    ├── peplife2/
-    ├── dramp/
     └── hpa/
 ```
 
 Each downloader retains a raw response unchanged and writes a
 `download_manifest.json` receipt with source URL or query, retrieval time,
 file size, and SHA-256 checksum.
+
+Half-life artifacts and manifests use the layout documented by the canonical
+pipeline. Run its `normalize_datasets.py` after acquisition to prepare the
+integrated serum tables needed by `0_12` and the two baseline data analyses.
 
 ## Required order
 

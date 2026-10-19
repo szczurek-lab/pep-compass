@@ -1,0 +1,566 @@
+{
+  "audit_date": "2026-10-01",
+  "scope": "Pre-implementation audit; not a production download manifest. Counts are observations unless stated otherwise.",
+  "pepmsnd_repository_tree_sha": "c0fa6957c7f88a57af29410cfc075542c92a2c63",
+  "sequence_normalization": [
+    "remove HTML tags",
+    "remove whitespace",
+    "uppercase; no chemical identity equivalence implied"
+  ],
+  "checks": {
+    "peplife2_natural_modified_ids_disjoint": true,
+    "peplife2_api_union_equals_complete_fasta_ids": true,
+    "local_serum_records_identical_to_full_api": true,
+    "local_plasma_records_identical_to_full_api": true
+  },
+  "files": [
+    {
+      "source": "peplife2_natural",
+      "filename": "peplife_natural.json",
+      "bytes": 2774513,
+      "sha256": "3cf0dd52f05f46e93ad82a9cbbc3534fa9b25ba3a4bb75f3e2f21a57cffcb550",
+      "requested_url": "https://webs.iiitd.edu.in/raghava/peplife2/api/api.php?dataType=seq&dataValue=Natural",
+      "record_count": 2561
+    },
+    {
+      "source": "peplife2_modified",
+      "filename": "peplife_modified.json",
+      "bytes": 2254542,
+      "sha256": "572844dd29626bc7a7585a3c5fd0980a88039b7e1a93f2d45af419d40200b0aa",
+      "requested_url": "https://webs.iiitd.edu.in/raghava/peplife2/api/api.php?dataType=seq&dataValue=Modified",
+      "record_count": 1939
+    },
+    {
+      "source": "peplife2_complete_fasta",
+      "filename": "peplife_fasta.txt",
+      "bytes": 264994,
+      "sha256": "3b242a81720d9226bb25eb24a62c6ffdb348ec275184db68429e65b6687ed6b9",
+      "requested_url": "https://webs.iiitd.edu.in/raghava/peplife2/dataset/Peplife_complete.fasta",
+      "record_count": 4500
+    },
+    {
+      "source": "pepmsnd",
+      "filename": "pepmsnd.xlsx",
+      "bytes": 981367,
+      "sha256": "787de5f5c5fd47a5e34a278fb7fced926825d7a5112428f5548ba8a8d69afd33",
+      "requested_url": "https://raw.githubusercontent.com/hmenghu/PepMSND/main/Dataset/Dataset.xlsx",
+      "record_count": 635
+    },
+    {
+      "source": "plifepred_natural",
+      "filename": "plifepred_natural.xlsx",
+      "bytes": 60623,
+      "sha256": "a52bd530fe0687fddebf8993daa137760a18f31e72511dbd0e1d1e2c61388fb2",
+      "requested_url": "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0196829.s008&type=supplementary",
+      "record_count": 163
+    },
+    {
+      "source": "plifepred_mixed",
+      "filename": "plifepred_modified.xlsx",
+      "bytes": 69264,
+      "sha256": "b4725d20f88fedd9a0095eca79b0467ebc6027671e9b3abd252bac96e758c049",
+      "requested_url": "https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0196829.s007&type=supplementary",
+      "record_count": 261
+    },
+    {
+      "source": "cavaco_supplement_docx",
+      "filename": "CTS-14-1349-s001.docx",
+      "bytes": 1037191,
+      "sha256": "cef9fe2ec7460a720074e1ad21a8806f736aa63870dbabbafab1bdf8e7fa5296",
+      "requested_url": "https://pmc-oa-opendata.s3.amazonaws.com/PMC8301568.1/CTS-14-1349-s001.docx"
+    },
+    {
+      "source": "cavaco_supplement_pdf",
+      "filename": "CTS-14-1349-s003.pdf",
+      "bytes": 708109,
+      "sha256": "ed3c6e938002397e822e819d6e9948cf3ed4a610d1892e5ea570476a7159affe",
+      "requested_url": "https://pmc-oa-opendata.s3.amazonaws.com/PMC8301568.1/CTS-14-1349-s003.pdf"
+    },
+    {
+      "source": "local_serum",
+      "filename": "human_serum.json",
+      "bytes": 182905,
+      "sha256": "09f0177b7f238e07c4d8604d00822e9d2c635966f37f607011a28fc355d1d845",
+      "repository_path": "data/serum_proteolysis_calibration/raw/peplife2/human_serum.json",
+      "record_count": 170
+    },
+    {
+      "source": "local_plasma",
+      "filename": "human_plasma.json",
+      "bytes": 422330,
+      "sha256": "80221fd7e29e7a1c6dfa7dba49c53dbce72b0e87454af592c7e6d48bbf8ee057",
+      "repository_path": "data/serum_proteolysis_calibration/raw/peplife2/human_plasma.json",
+      "record_count": 378
+    },
+    {
+      "source": "local_dramp",
+      "filename": "stability_amps.xlsx",
+      "bytes": 24144,
+      "sha256": "e37e0be89f4830f02e4bcc28fabf4d00b2d3601818c2a432c8e4a8ac02b01f9a",
+      "repository_path": "data/serum_proteolysis_calibration/raw/dramp/stability_amps.xlsx",
+      "record_count": 110
+    }
+  ],
+  "unique_sequence_counts": {
+    "peplife2_all": 1808,
+    "plifepred_natural": 163,
+    "plifepred_mixed": 234,
+    "pepmsnd": 558,
+    "dramp_all": 81
+  },
+  "sequence_intersections": {
+    "peplife2__plifepred_natural": 163,
+    "peplife2__plifepred_mixed": 230,
+    "peplife2__pepmsnd": 255,
+    "peplife2__dramp": 49,
+    "plifepred_natural__plifepred_mixed": 163,
+    "pepmsnd__plifepred_natural": 134,
+    "pepmsnd__plifepred_mixed": 147,
+    "dramp__plifepred_natural": 20,
+    "dramp__plifepred_mixed": 32,
+    "dramp__pepmsnd": 23
+  },
+  "cavaco_rar_inspection": {
+    "url": "https://pmc-oa-opendata.s3.amazonaws.com/PMC8301568.1/CTS-14-1349-s002.rar",
+    "archive_bytes": 146216453,
+    "method": "HTTP byte ranges of RAR5 headers, no executables run",
+    "entries": [
+      {
+        "name": "AminoAcids/Amino Acids Setup 1.0.5.exe",
+        "packed": 43182272,
+        "unpacked": 43219760
+      },
+      {
+        "name": "AminoAcids/Amino Acids Setup 1.0.5.exe.blockmap",
+        "packed": 45407,
+        "unpacked": 45407
+      },
+      {
+        "name": "AminoAcids/builder-effective-config.yaml",
+        "packed": 208,
+        "unpacked": 302
+      },
+      {
+        "name": "AminoAcids/win-unpacked/Amino Acids.exe",
+        "packed": 30628034,
+        "unpacked": 93752832
+      },
+      {
+        "name": "AminoAcids/win-unpacked/chrome_100_percent.pak",
+        "packed": 149414,
+        "unpacked": 167621
+      },
+      {
+        "name": "AminoAcids/win-unpacked/chrome_200_percent.pak",
+        "packed": 229909,
+        "unpacked": 249617
+      },
+      {
+        "name": "AminoAcids/win-unpacked/d3dcompiler_47.dll",
+        "packed": 1557980,
+        "unpacked": 4346120
+      },
+      {
+        "name": "AminoAcids/win-unpacked/ffmpeg.dll",
+        "packed": 836946,
+        "unpacked": 2126848
+      },
+      {
+        "name": "AminoAcids/win-unpacked/icudtl.dat",
+        "packed": 3706392,
+        "unpacked": 10218000
+      },
+      {
+        "name": "AminoAcids/win-unpacked/libEGL.dll",
+        "packed": 47692,
+        "unpacked": 109056
+      },
+      {
+        "name": "AminoAcids/win-unpacked/libGLESv2.dll",
+        "packed": 1479097,
+        "unpacked": 5103616
+      },
+      {
+        "name": "AminoAcids/win-unpacked/LICENSE.electron.txt",
+        "packed": 650,
+        "unpacked": 1060
+      },
+      {
+        "name": "AminoAcids/win-unpacked/LICENSES.chromium.html",
+        "packed": 124861,
+        "unpacked": 1993817
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/am.pak",
+        "packed": 22622,
+        "unpacked": 100801
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/ar.pak",
+        "packed": 22435,
+        "unpacked": 100211
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/bg.pak",
+        "packed": 22522,
+        "unpacked": 109803
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/bn.pak",
+        "packed": 23907,
+        "unpacked": 144375
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/ca.pak",
+        "packed": 20118,
+        "unpacked": 71155
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/cs.pak",
+        "packed": 21526,
+        "unpacked": 72793
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/da.pak",
+        "packed": 19299,
+        "unpacked": 65844
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/de.pak",
+        "packed": 20587,
+        "unpacked": 71137
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/el.pak",
+        "packed": 24270,
+        "unpacked": 123261
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/en-GB.pak",
+        "packed": 17639,
+        "unpacked": 59095
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/en-US.pak",
+        "packed": 17634,
+        "unpacked": 59750
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/es-419.pak",
+        "packed": 19824,
+        "unpacked": 69212
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/es.pak",
+        "packed": 19767,
+        "unpacked": 71389
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/et.pak",
+        "packed": 19339,
+        "unpacked": 63513
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/fa.pak",
+        "packed": 21590,
+        "unpacked": 97960
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/fi.pak",
+        "packed": 19497,
+        "unpacked": 65526
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/fil.pak",
+        "packed": 19730,
+        "unpacked": 72110
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/fr.pak",
+        "packed": 20760,
+        "unpacked": 76367
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/gu.pak",
+        "packed": 23278,
+        "unpacked": 137632
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/he.pak",
+        "packed": 20718,
+        "unpacked": 84670
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/hi.pak",
+        "packed": 23475,
+        "unpacked": 139366
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/hr.pak",
+        "packed": 20580,
+        "unpacked": 68911
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/hu.pak",
+        "packed": 21371,
+        "unpacked": 73193
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/id.pak",
+        "packed": 18179,
+        "unpacked": 63157
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/it.pak",
+        "packed": 19483,
+        "unpacked": 69126
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/ja.pak",
+        "packed": 20132,
+        "unpacked": 84604
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/kn.pak",
+        "packed": 23680,
+        "unpacked": 157441
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/ko.pak",
+        "packed": 18813,
+        "unpacked": 70354
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/lt.pak",
+        "packed": 21080,
+        "unpacked": 74674
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/lv.pak",
+        "packed": 20902,
+        "unpacked": 74019
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/ml.pak",
+        "packed": 24866,
+        "unpacked": 169319
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/mr.pak",
+        "packed": 23549,
+        "unpacked": 139806
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/ms.pak",
+        "packed": 18215,
+        "unpacked": 64602
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/nb.pak",
+        "packed": 19098,
+        "unpacked": 64364
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/nl.pak",
+        "packed": 19897,
+        "unpacked": 67612
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/pl.pak",
+        "packed": 21258,
+        "unpacked": 72130
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/pt-BR.pak",
+        "packed": 19713,
+        "unpacked": 68998
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/pt-PT.pak",
+        "packed": 19540,
+        "unpacked": 69074
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/ro.pak",
+        "packed": 20326,
+        "unpacked": 71836
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/ru.pak",
+        "packed": 23194,
+        "unpacked": 109711
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/sk.pak",
+        "packed": 21944,
+        "unpacked": 73788
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/sl.pak",
+        "packed": 20242,
+        "unpacked": 69728
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/sr.pak",
+        "packed": 22510,
+        "unpacked": 105643
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/sv.pak",
+        "packed": 18994,
+        "unpacked": 64075
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/sw.pak",
+        "packed": 19175,
+        "unpacked": 65194
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/ta.pak",
+        "packed": 23310,
+        "unpacked": 162015
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/te.pak",
+        "packed": 23475,
+        "unpacked": 151293
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/th.pak",
+        "packed": 20768,
+        "unpacked": 129737
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/tr.pak",
+        "packed": 19721,
+        "unpacked": 68085
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/uk.pak",
+        "packed": 23229,
+        "unpacked": 112476
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/vi.pak",
+        "packed": 19475,
+        "unpacked": 78514
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/zh-CN.pak",
+        "packed": 19062,
+        "unpacked": 59042
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales/zh-TW.pak",
+        "packed": 18708,
+        "unpacked": 59153
+      },
+      {
+        "name": "AminoAcids/win-unpacked/natives_blob.bin",
+        "packed": 23547,
+        "unpacked": 125011
+      },
+      {
+        "name": "AminoAcids/win-unpacked/osmesa.dll",
+        "packed": 846243,
+        "unpacked": 2949632
+      },
+      {
+        "name": "AminoAcids/win-unpacked/resources/app.asar",
+        "packed": 55136743,
+        "unpacked": 177905345
+      },
+      {
+        "name": "AminoAcids/win-unpacked/resources/electron.asar",
+        "packed": 60211,
+        "unpacked": 277462
+      },
+      {
+        "name": "AminoAcids/win-unpacked/resources/elevate.exe",
+        "packed": 51821,
+        "unpacked": 107520
+      },
+      {
+        "name": "AminoAcids/win-unpacked/resources.pak",
+        "packed": 3265153,
+        "unpacked": 8720768
+      },
+      {
+        "name": "AminoAcids/win-unpacked/snapshot_blob.bin",
+        "packed": 109490,
+        "unpacked": 642692
+      },
+      {
+        "name": "AminoAcids/win-unpacked/swiftshader/libEGL.dll",
+        "packed": 62569,
+        "unpacked": 141824
+      },
+      {
+        "name": "AminoAcids/win-unpacked/swiftshader/libGLESv2.dll",
+        "packed": 856332,
+        "unpacked": 2670592
+      },
+      {
+        "name": "AminoAcids/win-unpacked/v8_context_snapshot.bin",
+        "packed": 189921,
+        "unpacked": 1041560
+      },
+      {
+        "name": "AminoAcids/win-unpacked/VkICD_mock_icd.dll",
+        "packed": 141928,
+        "unpacked": 347136
+      },
+      {
+        "name": "AminoAcids/win-unpacked/VkLayer_core_validation.dll",
+        "packed": 680176,
+        "unpacked": 3266560
+      },
+      {
+        "name": "AminoAcids/win-unpacked/VkLayer_object_tracker.dll",
+        "packed": 398315,
+        "unpacked": 2231296
+      },
+      {
+        "name": "AminoAcids/win-unpacked/VkLayer_parameter_validation.dll",
+        "packed": 522749,
+        "unpacked": 2856448
+      },
+      {
+        "name": "AminoAcids/win-unpacked/VkLayer_threading.dll",
+        "packed": 380438,
+        "unpacked": 2126848
+      },
+      {
+        "name": "AminoAcids/win-unpacked/VkLayer_unique_objects.dll",
+        "packed": 383408,
+        "unpacked": 2145792
+      },
+      {
+        "name": "AminoAcids/win-unpacked/locales",
+        "packed": 0,
+        "unpacked": 0
+      },
+      {
+        "name": "AminoAcids/win-unpacked/resources",
+        "packed": 0,
+        "unpacked": 0
+      },
+      {
+        "name": "AminoAcids/win-unpacked/swiftshader",
+        "packed": 0,
+        "unpacked": 0
+      },
+      {
+        "name": "AminoAcids/win-unpacked",
+        "packed": 0,
+        "unpacked": 0
+      },
+      {
+        "name": "AminoAcids",
+        "packed": 0,
+        "unpacked": 0
+      }
+    ],
+    "app_asar_contents_inspected": false
+  }
+}

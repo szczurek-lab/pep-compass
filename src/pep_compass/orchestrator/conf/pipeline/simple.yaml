@@ -1,0 +1,5 @@
+_target_: pep_compass.predefined.simple
+seed: 7
+device: cpu
+mutation_candidates: 4
+oracle_calls: 3

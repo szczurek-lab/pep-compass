@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Retrieve only Human serum and Human plasma records from PEPlife2."""
+"""Compatibility entrypoint: canonical PEPlife2 acquisition lives in half_time_data.
+
+An explicit --output-dir retains the historical single-medium export for callers
+requiring raw JSON. Default invocations acquire the full canonical database.
+"""
 
 from __future__ import annotations
 
@@ -53,8 +57,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=acquisition_root() / "raw" / "peplife2",
-        help="Directory for unmodified PEPlife2 JSON responses.",
+        default=None,
+        help="Explicit legacy medium export; default acquires the canonical full database.",
     )
     parser.add_argument("--force", action="store_true", help="Replace an existing response.")
     parser.add_argument("--base-url", default=PEPLIFE2_API_URL, help=argparse.SUPPRESS)
@@ -70,6 +74,15 @@ def main(arguments: list[str] | None = None) -> int:
     """
 
     args = build_parser().parse_args(arguments)
+    if args.output_dir is None:
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "half_time_data"))
+        from half_time_sources import acquire
+        try:
+            acquire("peplife2", force=args.force)
+        except (OSError, ValueError) as error:
+            print(f"error: canonical PEPlife2 acquisition failed: {error}", file=sys.stderr)
+            return 1
+        return 0
     medium = MEDIA[args.medium]
     url = f"{args.base_url}?{urlencode({'dataType': 'organism', 'dataValue': medium})}"
     destination = args.output_dir / f"{args.medium}.json"

@@ -1,0 +1,2 @@
+_target_: pep_compass.orchestrator.backends.subprocess.SubprocessBackend
+max_workers: 1

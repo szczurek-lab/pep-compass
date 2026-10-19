@@ -1,0 +1,4 @@
+name: experiment
+output_dir: results
+skip_completed: false
+continue_on_error: false

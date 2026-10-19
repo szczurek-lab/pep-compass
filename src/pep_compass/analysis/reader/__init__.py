@@ -1,25 +1,7 @@
-"""Lazy discovery, selection, and metric caching for experiment outputs."""
+"""Lazy selection and metric caching over the canonical SQLite run format."""
 
-from pep_compass.analysis.reader.entities import (
-    Experiment,
-    ExperimentCollection,
-    ExperimentRun,
-)
 from pep_compass.analysis.reader.reader import ExperimentReader
-from pep_compass.analysis.reader.replay import (
-    LocalEnumerationReplay,
-    ReplayVerification,
-    RunReplay,
-)
 from pep_compass.analysis.reader.selection import ExperimentSelection
+from pep_compass.optimization.saving.reader import AnalysisReader
 
-__all__ = [
-    "Experiment",
-    "ExperimentCollection",
-    "ExperimentReader",
-    "LocalEnumerationReplay",
-    "ExperimentRun",
-    "ExperimentSelection",
-    "ReplayVerification",
-    "RunReplay",
-]
+__all__ = ["ExperimentReader", "ExperimentSelection", "AnalysisReader"]

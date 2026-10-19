@@ -77,14 +77,15 @@ def source_command(source: str, manifest: Path, dry_run: bool) -> list[str] | No
     """
 
     script_dir = Path(__file__).resolve().parent
+    half_time_downloader = script_dir.parent / "half_time_data" / "download_datasets.py"
     python = sys.executable
     commands: dict[str, list[str] | None] = {
         "uniprot": [python, str(script_dir / "map_uniprot_serum_proteases.py"), "--manifest", str(manifest)],
         "brenda": [python, str(script_dir / "check_brenda_snapshot.py")],
         "sabio": [python, str(script_dir / "download_sabio_serum_panel.py"), "--manifest", str(manifest), "--continue-on-error"],
-        "peplife2_serum": [python, str(script_dir / "download_peplife2.py"), "human_serum"],
-        "peplife2_plasma": [python, str(script_dir / "download_peplife2.py"), "human_plasma"],
-        "dramp_stability": [python, str(script_dir / "download_fixed_sources.py"), "dramp_stability"],
+        "peplife2_serum": [python, str(half_time_downloader), "--source", "peplife2"],
+        "peplife2_plasma": [python, str(half_time_downloader), "--source", "peplife2"],
+        "dramp_stability": [python, str(half_time_downloader), "--source", "dramp"],
         "hpa_blood_ms": [python, str(script_dir / "download_fixed_sources.py"), "hpa_blood_ms"],
         "hpa_blood_immunoassay": [python, str(script_dir / "download_fixed_sources.py"), "hpa_blood_immunoassay"],
         "mmp_pics_pmc": [python, str(script_dir / "download_pmc_supplements.py"), "mmp_pics"],

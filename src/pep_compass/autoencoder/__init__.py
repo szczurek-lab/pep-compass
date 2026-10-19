@@ -1,7 +1,6 @@
-"""Autoencoder contracts, implementations, model registry, and geometry."""
+"""Shared autoencoder resources; importing does not load model weights."""
 
-from pep_compass.autoencoder.base import Autoencoder
-from pep_compass.autoencoder.factory import AutoencoderFactory
-from pep_compass.autoencoder.geometry import TangentDecomposition
+from pep_compass.autoencoder.resource import AutoencoderResource
+from pep_compass.autoencoder.strategies.hydramp.resource import HydrAMP
 
-__all__ = ["Autoencoder", "AutoencoderFactory", "TangentDecomposition"]
+__all__ = ["AutoencoderResource", "HydrAMP"]

@@ -1,5 +1,7 @@
 """Shared sub-Riemannian geometry contracts derived from an autoencoder."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import Enum
 
@@ -24,8 +26,17 @@ class GeometryContract:
     source: str = "decoder_jacobian"
 
     def satisfies(self, requirement: "GeometryContract") -> bool:
-        """Return whether this producer provides every required artifact."""
-        return self.source == requirement.source and self.artifacts >= requirement.artifacts
+        """Return whether this producer provides every required artifact.
+
+        :param requirement: Requirement.
+        :type requirement: GeometryContract
+        :return: Result of this operation.
+        :rtype: bool
+        """
+        return (
+            self.source == requirement.source
+            and self.artifacts >= requirement.artifacts
+        )
 
 
 TANGENT_GEOMETRY_CONTRACT = GeometryContract(frozenset(GeometryArtifact))
@@ -43,7 +54,10 @@ class PointGeometry:
     provider_id: int
 
     def validate(self) -> None:
-        """Validate the one-row structural invariant."""
+        """Validate the one-row structural invariant.
+
+        :rtype: None
+        """
         if self.geometry.singular_values.shape[0] != 1:
             raise ValueError("Point geometry must contain exactly one SVD row.")
 
@@ -51,7 +65,28 @@ class PointGeometry:
 class SubRiemannianTangentSpace:
     """Expose one geometry row to existing geometry-dependent filters."""
 
-    def __init__(self, U, S, V, horizontal_threshold, device="cpu"):
+    def __init__(
+        self,
+        U: torch.Tensor,
+        S: torch.Tensor,
+        V: torch.Tensor,
+        horizontal_threshold: float,
+        device: str | torch.device = "cpu",
+    ) -> None:
+        """Initialize this object with the declared configuration.
+
+        :param U: U.
+        :type U: torch.Tensor
+        :param S: S.
+        :type S: torch.Tensor
+        :param V: V.
+        :type V: torch.Tensor
+        :param horizontal_threshold: Horizontal threshold.
+        :type horizontal_threshold: float
+        :param device: Computation device accepted by the numerical backend.
+        :type device: str | torch.device
+        :rtype: None
+        """
         del device
         self.U, self.S, self.V = U, S, V
         self.horizontal_threshold, self.device = horizontal_threshold, U.device
@@ -59,8 +94,16 @@ class SubRiemannianTangentSpace:
         self.horizontal_dim, self.vertical_dim = int(mask.sum()), int((~mask).sum())
         self.projection_matrix = None
 
-    def project_ambient_vector_to_horizontal_space(self, ambient_vector):
-        """Apply the truncated pseudoinverse without recomputing an SVD."""
+    def project_ambient_vector_to_horizontal_space(
+        self, ambient_vector: torch.Tensor
+    ) -> torch.Tensor:
+        """Apply the truncated pseudoinverse without recomputing an SVD.
+
+        :param ambient_vector: Ambient vector.
+        :type ambient_vector: torch.Tensor
+        :return: Result of this operation.
+        :rtype: torch.Tensor
+        """
         if self.projection_matrix is None:
             inverse = torch.where(
                 torch.abs(self.S) > self.horizontal_threshold,

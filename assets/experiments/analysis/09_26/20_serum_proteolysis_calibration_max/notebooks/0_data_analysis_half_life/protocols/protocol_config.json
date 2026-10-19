@@ -1,0 +1,49 @@
+{
+  "version": "half_life_protocol_v3",
+  "group": {
+    "species": "human",
+    "matrix": "serum",
+    "in_vivo_in_vitro": "in vitro"
+  },
+  "defaults": {
+    "ph": 7.4,
+    "temperature_c": 37.0
+  },
+  "acceptance_bounds": {
+    "ph": [
+      7.35,
+      7.45
+    ],
+    "temperature_c": [
+      36,
+      38
+    ]
+  },
+  "scaling_parameters": [
+    "matrix_fraction",
+    "peptide_concentration_um",
+    "peptide_per_serum_um"
+  ],
+  "scaling_status": "record_only; model deferred",
+  "precision_status": "reported CI retained; missing CI stays null; synthetic tolerances deferred to downstream analysis",
+  "references": {
+    "ph": {
+      "value": 7.4,
+      "label": "Protocol pH reference 7.4",
+      "source": "https://www.ncbi.nlm.nih.gov/books/NBK507807/"
+    },
+    "temperature_c": {
+      "value": 37,
+      "label": "Serum assay reference 37 \u00b0C",
+      "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8301568/"
+    },
+    "matrix_fraction": {
+      "value": 1,
+      "label": "Neat matrix (100%); not an acceptance gate"
+    },
+    "peptide_concentration_um": {
+      "value": null,
+      "label": "No universal concentration reference"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proteolysis-data-manager"
+version = "0.1.0"
+description = "Acquisition, integration, filtering and analysis of proteolysis datasets"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.2",
+    "numpy>=1.26",
+    "pyarrow>=15",
+    "biopython>=1.84",
+    "openpyxl>=3.1",
+    "matplotlib>=3.9",
+    "ijson>=3.3",
+]
+
+[project.scripts]
+proteolysis-download-half-life = "proteolysis_data_manager.cli:download_half_life"
+proteolysis-normalize-half-life = "proteolysis_data_manager.cli:normalize_half_life"
+proteolysis-import-brenda = "proteolysis_data_manager.cli:import_brenda"
+proteolysis-normalize-kinetics = "proteolysis_data_manager.cli:normalize_kinetics"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+proteolysis_data_manager = [
+    "acquisition/resources/*.json",
+    "integration/half_life/adapters/resources/*.json",
+    "integration/half_life/adapters/resources/*.tsv",
+]

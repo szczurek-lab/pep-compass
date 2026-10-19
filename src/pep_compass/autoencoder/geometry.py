@@ -43,17 +43,29 @@ class StableTangentGeometry:
 
     @property
     def left_vectors(self) -> torch.Tensor:
-        """Return ambient singular vectors ``(B, A, K)``."""
+        """Return ambient singular vectors ``(B, A, K)``.
+
+        :return: Result of this operation.
+        :rtype: torch.Tensor
+        """
         return self.decomposition.left_vectors
 
     @property
     def singular_values(self) -> torch.Tensor:
-        """Return singular values ``(B, K)``."""
+        """Return singular values ``(B, K)``.
+
+        :return: Result of this operation.
+        :rtype: torch.Tensor
+        """
         return self.decomposition.singular_values
 
     @property
     def right_vectors(self) -> torch.Tensor:
-        """Return latent right singular vectors ``(B, K, D)``."""
+        """Return latent right singular vectors ``(B, K, D)``.
+
+        :return: Result of this operation.
+        :rtype: torch.Tensor
+        """
         return self.decomposition.right_vectors
 
     def project_ambient_to_active_latent(
@@ -63,6 +75,9 @@ class StableTangentGeometry:
 
         :param ambient_vectors: Ambient vectors ``(B, A)``.
         :return: Active latent projections ``(B, D)``.
+
+        :type ambient_vectors: torch.Tensor
+        :rtype: torch.Tensor
         """
         coefficients = torch.bmm(
             self.left_vectors.transpose(1, 2), ambient_vectors.unsqueeze(-1)
@@ -78,7 +93,13 @@ class StableTangentGeometry:
         ).squeeze(-1)  # (B, D)
 
     def select(self, index: int) -> "StableTangentGeometry":
-        """Return a one-row view without copying SVD tensor storage."""
+        """Return a one-row view without copying SVD tensor storage.
+
+        :param index: Index.
+        :type index: int
+        :return: Result of this operation.
+        :rtype: StableTangentGeometry
+        """
         decomposition = TangentDecomposition(
             self.left_vectors[index : index + 1],
             self.singular_values[index : index + 1],
@@ -100,6 +121,10 @@ def compute_tangent_decomposition(
     :param autoencoder: Autoencoder providing batched decoder Jacobians.
     :param latent_positions: One latent vector ``(D,)`` or batch ``(B, D)``.
     :return: Named batched tangent decomposition.
+
+    :type autoencoder: Autoencoder
+    :type latent_positions: torch.Tensor
+    :rtype: TangentDecomposition
     """
     if latent_positions.ndim == 1:
         latent_positions = latent_positions.unsqueeze(0)  # (1, D)
@@ -124,6 +149,11 @@ def compute_stable_tangent_geometry(
     :param kappa: Non-negative squared singular-value cutoff.
     :return: Batched geometry retained until local candidate filtering ends.
     :raises ValueError: If ``kappa`` is negative.
+
+    :type autoencoder: Autoencoder
+    :type latent_positions: torch.Tensor
+    :type kappa: float
+    :rtype: StableTangentGeometry
     """
     if kappa < 0:
         raise ValueError("SORBES kappa must be non-negative.")

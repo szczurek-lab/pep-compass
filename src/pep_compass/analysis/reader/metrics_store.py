@@ -14,7 +14,13 @@ import pandas as pd
 
 
 def stable_hash(value: Any) -> str:
-    """Return a stable SHA-256 hash for JSON-compatible analysis metadata."""
+    """Return a stable SHA-256 hash for JSON-compatible analysis metadata.
+
+    :param value: Value consumed by this conversion or transformation.
+    :type value: Any
+    :return: Result of this operation.
+    :rtype: str
+    """
     payload = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
@@ -26,6 +32,9 @@ class MetricsStore:
         """Initialize the SQLite schema.
 
         :param path: SQLite file stored beside the opened experiment collection.
+
+        :type path: str | Path
+        :rtype: None
         """
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -77,6 +86,11 @@ class MetricsStore:
                 )
 
     def _connect(self) -> sqlite3.Connection:
+        """Connect.
+
+        :return: Result of this operation.
+        :rtype: sqlite3.Connection
+        """
         connection = sqlite3.connect(self.path)
         connection.execute("PRAGMA journal_mode=WAL")
         return connection
@@ -94,6 +108,12 @@ class MetricsStore:
         :param values: Sequence-to-value mapping; values must be JSON-compatible.
         :param metric_version: Model or implementation fingerprint.
         :param configuration: Metric parameters affecting reproducibility.
+
+        :type metric_name: str
+        :type values: Mapping[str, Any]
+        :type metric_version: str
+        :type configuration: Mapping[str, Any] | None
+        :rtype: None
         """
         configuration_hash = stable_hash(configuration or {})
         rows = [
@@ -129,6 +149,12 @@ class MetricsStore:
         :param metric_version: Model or implementation fingerprint.
         :param configuration: Metric parameters affecting reproducibility.
         :return: Mapping containing only cached sequences.
+
+        :type metric_name: str
+        :type sequences: Iterable[str]
+        :type metric_version: str
+        :type configuration: Mapping[str, Any] | None
+        :rtype: dict[str, Any]
         """
         sequence_list = list(dict.fromkeys(sequences))
         if not sequence_list:
@@ -175,13 +201,19 @@ class MetricsStore:
         :param batch_size: Maximum uncached sequences evaluated at once.
         :return: Complete mapping for all requested sequences.
         :raises ValueError: If evaluator output length is inconsistent.
+
+        :type metric_name: str
+        :type sequences: Iterable[str]
+        :type evaluator: Callable[[list[str]], Mapping[str, Any] | Sequence[Any]]
+        :type metric_version: str
+        :type configuration: Mapping[str, Any] | None
+        :type batch_size: int
+        :rtype: dict[str, Any]
         """
         if batch_size < 1:
             raise ValueError("batch_size must be positive")
         requested = list(dict.fromkeys(sequences))
-        cached = self.get_metrics(
-            metric_name, requested, metric_version, configuration
-        )
+        cached = self.get_metrics(metric_name, requested, metric_version, configuration)
         missing = [sequence for sequence in requested if sequence not in cached]
         for start in range(0, len(missing), batch_size):
             batch = missing[start : start + batch_size]
@@ -224,6 +256,15 @@ class MetricsStore:
         :param analysis_version: Implementation version.
         :param complete: Whether raw inputs are no longer required to reproduce
             this exact result.
+
+        :type analysis_name: str
+        :type frame: pd.DataFrame
+        :type metadata: Mapping[str, Any]
+        :type selection: Mapping[str, Any]
+        :type parameters: Mapping[str, Any]
+        :type analysis_version: str
+        :type complete: bool
+        :rtype: None
         """
         row = (
             analysis_name,
@@ -255,7 +296,19 @@ class MetricsStore:
         parameters: Mapping[str, Any],
         analysis_version: str = "1",
     ) -> tuple[pd.DataFrame, dict[str, Any]] | None:
-        """Return an exact cached analysis result when available."""
+        """Return an exact cached analysis result when available.
+
+        :param analysis_name: Analysis name.
+        :type analysis_name: str
+        :param selection: Strategy selecting admissible substitutions or candidate rows.
+        :type selection: Mapping[str, Any]
+        :param parameters: Named configuration values consumed by this operation.
+        :type parameters: Mapping[str, Any]
+        :param analysis_version: Analysis version.
+        :type analysis_version: str
+        :return: Result of this operation.
+        :rtype: tuple[pd.DataFrame, dict[str, Any]] | None
+        """
         with self._connect() as connection:
             row = connection.execute(
                 """
@@ -276,7 +329,11 @@ class MetricsStore:
         return pd.read_json(StringIO(row[0]), orient="table"), json.loads(row[1])
 
     def list_analyses(self) -> pd.DataFrame:
-        """List complete cached analyses, including their original specifications."""
+        """List complete cached analyses, including their original specifications.
+
+        :return: Result of this operation.
+        :rtype: pd.DataFrame
+        """
         with self._connect() as connection:
             rows = connection.execute(
                 """
@@ -307,7 +364,19 @@ class MetricsStore:
         parameters_hash: str,
         analysis_version: str = "1",
     ) -> tuple[pd.DataFrame, dict[str, Any]]:
-        """Load one cached result without requiring raw experiment files."""
+        """Load one cached result without requiring raw experiment files.
+
+        :param analysis_name: Analysis name.
+        :type analysis_name: str
+        :param selection_hash: Selection hash.
+        :type selection_hash: str
+        :param parameters_hash: Parameters hash.
+        :type parameters_hash: str
+        :param analysis_version: Analysis version.
+        :type analysis_version: str
+        :return: Result of this operation.
+        :rtype: tuple[pd.DataFrame, dict[str, Any]]
+        """
         with self._connect() as connection:
             row = connection.execute(
                 """

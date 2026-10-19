@@ -1,0 +1,19 @@
+{
+  "condition_key": "human_enzyme",
+  "enzyme_species": "Homo sapiens",
+  "experiment_filters": {
+    "species": null,
+    "matrix": null,
+    "in_vivo_in_vitro": null
+  },
+  "acceptance_bounds": {
+    "ph": null,
+    "temperature_c": null
+  },
+  "missing_condition_policy": "retain",
+  "references": {
+    "ph": 7.4,
+    "temperature_c": 37.0
+  },
+  "description": "Source contexts associated exclusively with human enzymes. Matrix and mode are not asserted. Numerical eligibility is a diagnostic, not an export gate. pH/T gates await review."
+}

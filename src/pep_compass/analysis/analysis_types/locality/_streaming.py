@@ -10,7 +10,13 @@ import numpy as np
 
 
 def _duration(seconds: float | None) -> str:
-    """Format a duration for compact progress output."""
+    """Format a duration for compact progress output.
+
+    :param seconds: Seconds.
+    :type seconds: float | None
+    :return: Result of this operation.
+    :rtype: str
+    """
     if seconds is None or not np.isfinite(seconds):
         return "unknown"
     seconds = max(0, int(round(seconds)))
@@ -38,6 +44,10 @@ class ProgressReporter:
     _started_at: float = field(default_factory=monotonic, init=False)
 
     def __post_init__(self) -> None:
+        """Post init.
+
+        :rtype: None
+        """
         if self.every_batches < 1:
             raise ValueError("Progress interval must be positive")
         if self.enabled:
@@ -47,7 +57,12 @@ class ProgressReporter:
             )
 
     def update(self, rows: int) -> None:
-        """Record one completed batch and optionally print its progress."""
+        """Record one completed batch and optionally print its progress.
+
+        :param rows: Zero-based source row indices, or None to preserve the complete order.
+        :type rows: int
+        :rtype: None
+        """
         self._processed += rows
         self._batches += 1
         if not self.enabled:
@@ -59,9 +74,7 @@ class ProgressReporter:
         remaining = max(0, self.total - self._processed)
         eta = remaining / rate if rate > 0 else None
         percentage = (
-            min(100.0, 100.0 * self._processed / self.total)
-            if self.total
-            else 100.0
+            min(100.0, 100.0 * self._processed / self.total) if self.total else 100.0
         )
         print(
             f"[{self.label}] batch={self._batches:,} "
@@ -73,12 +86,20 @@ class ProgressReporter:
 
     @property
     def processed(self) -> int:
-        """Return the number of rows reported as completed."""
+        """Return the number of rows reported as completed.
+
+        :return: Result of this operation.
+        :rtype: int
+        """
         return self._processed
 
     @property
     def elapsed_seconds(self) -> float:
-        """Return wall-clock seconds since reporter initialization."""
+        """Return wall-clock seconds since reporter initialization.
+
+        :return: Result of this operation.
+        :rtype: float
+        """
         return monotonic() - self._started_at
 
 
@@ -103,18 +124,34 @@ class NestedProgress:
     _current: ProgressReporter | None = field(default=None, init=False)
 
     def __post_init__(self) -> None:
+        """Post init.
+
+        :rtype: None
+        """
         self._overall = ProgressReporter(
             f"{self.label}:overall", self.total, enabled=self.enabled
         )
 
     def start_stage(self, stage_label: str, stage_total: int) -> None:
-        """Start a new current-stage bar, e.g. one per processed run."""
+        """Start a new current-stage bar, e.g. one per processed run.
+
+        :param stage_label: Stage label.
+        :type stage_label: str
+        :param stage_total: Stage total.
+        :type stage_total: int
+        :rtype: None
+        """
         self._current = ProgressReporter(
             f"{self.label}:{stage_label}", stage_total, enabled=self.enabled
         )
 
     def update(self, rows: int) -> None:
-        """Advance both the current-stage bar and the overall bar."""
+        """Advance both the current-stage bar and the overall bar.
+
+        :param rows: Zero-based source row indices, or None to preserve the complete order.
+        :type rows: int
+        :rtype: None
+        """
         if self._current is not None:
             self._current.update(rows)
         self._overall.update(rows)
@@ -128,7 +165,12 @@ class RunningMoments:
     total: float = 0.0
 
     def update(self, values: np.ndarray) -> None:
-        """Add finite values from one processing chunk."""
+        """Add finite values from one processing chunk.
+
+        :param values: Values consumed by this conversion or transformation.
+        :type values: np.ndarray
+        :rtype: None
+        """
         finite = np.asarray(values, dtype=float)
         finite = finite[np.isfinite(finite)]
         self.count += int(finite.size)
@@ -136,7 +178,11 @@ class RunningMoments:
 
     @property
     def mean(self) -> float:
-        """Return the accumulated arithmetic mean."""
+        """Return the accumulated arithmetic mean.
+
+        :return: Result of this operation.
+        :rtype: float
+        """
         return self.total / self.count if self.count else float("nan")
 
 
@@ -155,12 +201,21 @@ class Reservoir:
     _rng: np.random.Generator = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        """Post init.
+
+        :rtype: None
+        """
         if self.capacity < 1:
             raise ValueError("Reservoir capacity must be positive")
         self._rng = np.random.default_rng(self.seed)
 
     def update(self, values: Iterable[object]) -> None:
-        """Consume observations using Algorithm R reservoir sampling."""
+        """Consume observations using Algorithm R reservoir sampling.
+
+        :param values: Values consumed by this conversion or transformation.
+        :type values: Iterable[object]
+        :rtype: None
+        """
         for value in values:
             self._seen += 1
             if len(self._values) < self.capacity:
@@ -172,10 +227,18 @@ class Reservoir:
 
     @property
     def values(self) -> list[object]:
-        """Return a copy of retained observations."""
+        """Return a copy of retained observations.
+
+        :return: Result of this operation.
+        :rtype: list[object]
+        """
         return list(self._values)
 
     @property
     def seen(self) -> int:
-        """Return the total number of consumed observations."""
+        """Return the total number of consumed observations.
+
+        :return: Result of this operation.
+        :rtype: int
+        """
         return self._seen

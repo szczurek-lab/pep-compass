@@ -18,14 +18,18 @@ class PlotTheme:
 
     @classmethod
     def preset(cls, name: str) -> "PlotTheme":
-        """Return a named notebook, paper, or presentation preset."""
+        """Return a named notebook, paper, or presentation preset.
+
+        :param name: Name identifying this object or recorded artifact.
+        :type name: str
+        :return: Result of this operation.
+        :rtype: PlotTheme
+        """
         presets = {
             "default": cls(),
             "notebook": cls(),
             "paper": cls(figure_size=(7.0, 4.2), context="paper", dpi=300),
-            "presentation": cls(
-                figure_size=(11.0, 6.0), context="talk", dpi=150
-            ),
+            "presentation": cls(figure_size=(11.0, 6.0), context="talk", dpi=150),
         }
         try:
             return presets[name]
