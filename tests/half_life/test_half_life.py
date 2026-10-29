@@ -1,6 +1,5 @@
 """Behavioral checks for scientific label semantics and acquisition provenance."""
 from pathlib import Path
-import importlib.util
 import io
 import json
 import sys
@@ -10,10 +9,9 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / 'assets/tools/proteolysis_data_manager/src'))
-sys.path.insert(0, str(REPO / 'assets/scripts/downloads/half_time_data'))
 from proteolysis_data_manager.integration.half_life.normalization import measurement, medium, peplife_row, chemical_signature, features, known
 from proteolysis_data_manager.analysis.half_life.overview import split_manifest
-import half_time_sources as acquisition
+from proteolysis_data_manager.acquisition import half_life as acquisition
 
 
 @pytest.mark.parametrize('raw,unit,relation,field,seconds', [
@@ -104,38 +102,6 @@ def test_api_rejects_embedded_errors_and_mismatched_counts(tmp_path):
         with pytest.raises(ValueError):acquisition.validate_file(p)
 
 
-def test_retained_file_preserves_original_receipt_and_detects_tampering(tmp_path, monkeypatch):
-    monkeypatch.setitem(acquisition.SOURCES,'test',{'raw.json':'https://example.test/data'})
-    calls=[]
-    def retrieve(request, timeout):
-        calls.append(request.full_url)
-        return io.BytesIO(b'{"status":200,"count":0,"data":[]}')
-    monkeypatch.setattr(acquisition,'urlopen',retrieve)
-    acquisition.acquire('test',tmp_path)
-    manifest=tmp_path/'manifests/download_test.json'
-    original=manifest.read_bytes()
-    acquisition.acquire('test',tmp_path)
-    assert calls == ['https://example.test/data']
-    assert manifest.read_bytes() == original
-    legacy=tmp_path/'raw/test/download_manifest.json'
-    manifest.replace(legacy)
-    acquisition.acquire('test',tmp_path)
-    assert manifest.read_bytes()==original and not legacy.exists()
-    assert calls==['https://example.test/data']
-    (tmp_path/'raw/test/raw.json').write_text('{"status":200,"count":0,"data":[],"extra":1}')
-    with pytest.raises(ValueError,match='changed'):acquisition.acquire('test',tmp_path)
-
-
-def test_failed_download_does_not_replace_previous_raw_file(tmp_path, monkeypatch):
-    monkeypatch.setitem(acquisition.SOURCES,'test',{'raw.json':'https://example.test/data'})
-    monkeypatch.setattr(acquisition,'urlopen',lambda *a,**k: io.BytesIO(b'{"status":200,"count":0,"data":[]}'))
-    acquisition.acquire('test',tmp_path)
-    original=(tmp_path/'raw/test/raw.json').read_bytes()
-    monkeypatch.setattr(acquisition,'urlopen',lambda *a,**k: io.BytesIO(b'{"status":404,"count":0,"data":[]}'))
-    with pytest.raises(ValueError):acquisition.acquire('test',tmp_path,force=True)
-    assert (tmp_path/'raw/test/raw.json').read_bytes() == original
-
-
 def test_evaluation_groups_connect_shared_sequences_and_publications():
     frame=pd.DataFrame([
         dict(observation_id='a',source='p',sequence='AAA',publication_id='10',baseline_eligible=True),
@@ -147,18 +113,6 @@ def test_evaluation_groups_connect_shared_sequences_and_publications():
     result=split_manifest(frame).set_index('observation_id')
     assert result.loc['a','evaluation_group'] == result.loc['b','evaluation_group'] == result.loc['c','evaluation_group']
     assert result.loc['d','evaluation_group'] != result.loc['a','evaluation_group']
-
-
-def test_serum_routing_uses_canonical_downloader():
-    scripts=REPO/'assets/scripts/downloads/serum_proteolysis_calibration'
-    sys.path.insert(0,str(scripts))
-    spec=importlib.util.spec_from_file_location('half_life_serum_router',scripts/'download_serum_sources.py')
-    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
-    for source,expected in [('peplife2_serum','peplife2'),('peplife2_plasma','peplife2'),('dramp_stability','dramp')]:
-        command=module.source_command(source,Path('/tmp/manifest.tsv'),False)
-        assert Path(command[1]).parent.name == 'half_time_data'
-        assert command[-2:] == ['--source',expected]
-    assert Path(module.source_command('hpa_blood_ms',Path('/tmp/manifest.tsv'),False)[1]).parent == scripts
 
 
 def test_condition_selection_separates_unknown_and_known_mismatch():

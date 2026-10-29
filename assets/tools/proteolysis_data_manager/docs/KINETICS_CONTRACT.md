@@ -153,7 +153,7 @@ not be copied to every cleavage site.
 from pathlib import Path
 from proteolysis_data_manager.integration.kinetics.reader import load_kinetics_data
 
-root = Path("data/kinetics_datasets")
+root = Path("data/proteolysis/kinetics_datasets")
 dataset = load_kinetics_data(root)
 view = dataset.measurements_view()  # exactly one row per measurement
 enzyme_contexts = dataset.for_enzyme(dataset["enzymes"].enzyme_id.iloc[0])
@@ -166,7 +166,8 @@ experiment membership, measurement/site scope, units and uncertainty structure.
 it does not assert enzyme-specific parameter attribution. The flattened view
 stores enzyme/site associations as lists, preventing Cartesian multiplication.
 
-All receipts are centralized in `manifests/`. Protocols write the same eight
+The single acquisition receipt is `raw/manifest.json`. Normalization and protocol
+receipts are in `manifests/`. Protocols write the same eight
 tables to `processed/<condition>/sources/brenda/`, including empty tables and
 accepted nonnumeric measurements. No redundant full-width CSV or report files
 are generated. A final multi-source aggregate is deferred until review.

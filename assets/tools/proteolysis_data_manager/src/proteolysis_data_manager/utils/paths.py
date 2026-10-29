@@ -14,4 +14,4 @@ def repository_root(start=None):
 
 
 def default_data_root():
-    return repository_root() / 'data/half_time_datasets'
+    return repository_root() / 'data/proteolysis/half_time_datasets'

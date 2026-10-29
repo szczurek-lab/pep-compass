@@ -6,6 +6,7 @@ from proteolysis_data_manager.integration.kinetics.adapters import brenda
 from proteolysis_data_manager.integration.kinetics.reader import KineticsDataset
 from proteolysis_data_manager.integration.kinetics.schema import arrow_table
 from proteolysis_data_manager.utils.io import sha256
+from proteolysis_data_manager.utils.storage import download_manifest
 
 
 def normalize_brenda(root):
@@ -16,7 +17,7 @@ def normalize_brenda(root):
     metadata = {
         'source': 'brenda', 'source_version': receipt['source_version'],
         'raw_sha256': receipt['sha256'], 'raw_path': receipt['raw_path'],
-        'download_manifest_sha256': sha256(root / 'manifests/download_brenda.json'),
+        'download_manifest_sha256': sha256(download_manifest(root, 'brenda', legacy_fallback=True)),
         'raw_kinetic_entries': audit['raw_entries'], 'parameter_counts': audit['parameter_counts'],
         'ec_blocks_with_measurements': audit['ec_blocks_with_measurements'],
         'experiment_policy': 'One source entry context; distinct entries are not linked by PMID/name/value coincidence.',

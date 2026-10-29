@@ -19,6 +19,10 @@ dependencies = [
 ]
 
 [project.scripts]
+proteolysis-download-raw = "proteolysis_data_manager.cli:download_raw"
+proteolysis-download-window-neighbourhood = "proteolysis_data_manager.cli:download_window_neighbourhood"
+proteolysis-download-kinetics = "proteolysis_data_manager.cli:download_kinetics"
+proteolysis-merge-merops = "proteolysis_data_manager.cli:merge_merops"
 proteolysis-download-half-life = "proteolysis_data_manager.cli:download_half_life"
 proteolysis-normalize-half-life = "proteolysis_data_manager.cli:normalize_half_life"
 proteolysis-import-brenda = "proteolysis_data_manager.cli:import_brenda"

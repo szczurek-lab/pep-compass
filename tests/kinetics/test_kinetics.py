@@ -165,7 +165,7 @@ def test_overview_accounts_for_entries_without_protein_links(record):
 
 def test_import_normalize_roundtrip_and_protocol(tmp_path, record, config):
     archive = tmp_path / 'brenda_test.tar.gz'
-    payload = json.dumps({'data': {'1.1.1.1': record, '3.4.21.5': record}}).encode()
+    payload = json.dumps({'release': '2026.1', 'version': '2.0.0', 'data': {'1.1.1.1': record, '3.4.21.5': record}}).encode()
     with tarfile.open(archive, 'w:gz') as tar:
         member = tarfile.TarInfo('brenda.json'); member.size = len(payload)
         tar.addfile(member, io.BytesIO(payload))

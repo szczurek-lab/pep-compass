@@ -4,7 +4,7 @@ import json
 import re
 import numpy as np
 import pandas as pd
-from proteolysis_data_manager.integration.half_life.normalization import known
+from proteolysis_data_manager.integration.half_life.adapters.common import known, condition_frame
 
 PARAMETERS = {
     'ph': 'Assay pH',
@@ -12,57 +12,6 @@ PARAMETERS = {
     'matrix_fraction': 'Serum fraction (v/v; 1 = neat serum)',
     'peptide_concentration_um': 'Peptide concentration (µM; molar values only)',
 }
-
-
-def condition_frame(frame):
-    """Parse only explicit single molar concentrations and explicit serum %.
-
-    Mass concentrations and administered doses are not converted using a
-    reference-backbone molecular weight. No physiological value is imputed.
-    """
-    result = frame.copy()
-    def concentration(raw):
-        raw = str(raw).replace('μ', 'µ')
-        m = re.fullmatch(r'\s*(\d+(?:\.\d+)?)\s*(nM|µM|uM|mM|M)(?:\s+after 1:1 mixing)?\s*', raw)
-        return float(m[1]) * {'nM': .001, 'µM': 1, 'uM': 1, 'mM': 1000, 'M': 1e6}[m[2]] if m else np.nan
-    result['peptide_concentration_um'] = result.peptide_concentration_raw.map(concentration)
-    result['concentration_numeric_origin'] = np.where(result.peptide_concentration_um.notna(), 'explicit molar value', 'unavailable or incompatible units')
-    def fraction(raw):
-        matches = re.findall(r'(\d+(?:\.\d+)?)\s*%\s*(?:aqueous\s+)?(?:(?:human|mouse|murine|rat|bovine|porcine)\s+)?(?:serum|plasma)\b', str(raw), re.I)
-        if len(matches) == 1 and 0 <= float(matches[0]) <= 100:
-            return float(matches[0]) / 100
-        if not matches and re.search(r'\b(?:full|neat|undiluted)\s+(?:(?:human|mouse|murine|rat)\s+)?(?:serum|plasma)\b', str(raw), re.I):
-            return 1.0
-        return np.nan
-    missing = result.matrix_fraction.isna()
-    result['matrix_fraction_origin'] = np.where(missing, 'unavailable', 'normalized source metadata')
-    parsed = result.test_sample_raw.map(fraction)
-    recover = missing & parsed.notna()
-    result.loc[recover, 'matrix_fraction'] = parsed[recover]
-    result.loc[recover, 'matrix_fraction_origin'] = 'explicit percentage in test_sample_raw'
-    # Read experimental-condition fields only; sequence pI is not assay pH.
-    text_fields = [f for f in ['incubation_time_raw', 'test_sample_raw', 'measurement_clause_raw'] if f in result]
-    def explicit_value(record, pattern):
-        values = set()
-        if pattern.startswith('(?<!') and record.get('temperature_metadata_scope') == 'detector_preparation_not_half_life':
-            return np.nan
-        for field in text_fields:
-            raw = str(record.get(field, '')).replace('℃', '°C')
-            # Multiple values and ranges are deliberately not collapsed.
-            range_pattern = (r'\d+(?:\.\d+)?\s*[-–]\s*\d+(?:\.\d+)?\s*°?\s*C\b'
-                             if pattern.startswith('(?<!') else r'\bpH\s*[:=]?\s*\d+(?:\.\d+)?\s*[-–]\s*\d')
-            if re.search(range_pattern, raw, re.I):
-                continue
-            values.update(float(m) for m in re.findall(pattern, raw, re.I))
-        return next(iter(values)) if len(values) == 1 else np.nan
-    for field, pattern in [('temperature_c', r'(?<![\d.])(\d+(?:\.\d+)?)\s*°?\s*C\b'),
-                           ('ph', r'\bpH\s*[:=]?\s*(\d+(?:\.\d+)?)\b')]:
-        parsed = result.apply(lambda record: explicit_value(record, pattern), axis=1)
-        recover = result[field].isna() & parsed.notna()
-        result.loc[recover, field] = parsed[recover]
-    for field in PARAMETERS:
-        result[field] = pd.to_numeric(result[field], errors='coerce')
-    return result
 
 
 def counts(rows):

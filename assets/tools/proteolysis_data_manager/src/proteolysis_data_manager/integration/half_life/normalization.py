@@ -12,7 +12,6 @@ import math
 from pathlib import Path
 
 import pandas as pd
-from proteolysis_data_manager.utils.storage import download_manifest
 from proteolysis_data_manager.integration.half_life.adapters.common import text, normalized_sequence, known, chemistry_field, medium, measurement, features, row, excel_rows, chemical_signature
 from proteolysis_data_manager.integration.half_life.adapters.peplife2 import peplife_row
 from proteolysis_data_manager.integration.half_life.adapters.dramp import dramp_rows
@@ -20,47 +19,22 @@ from proteolysis_data_manager.integration.half_life.adapters.dramp import dramp_
 from proteolysis_data_manager.integration.half_life.schema import SCHEMA_VERSION
 
 
-def load_source_records(root: Path, config_dir: Path | None = None) -> pd.DataFrame:
-    """Load validated source files and retain all published benchmark views."""
-    root = Path(root)
-    from proteolysis_data_manager.acquisition.half_life import verify_raw_sources
-    verify_raw_sources(root)
-    if config_dir is None:
-        config_dir = Path(__file__).parent / 'adapters/resources'
-    raw_root = root / 'raw'
-    from proteolysis_data_manager.integration.half_life.adapters import peplife2, pepmsnd, plifepred, dramp, cavaco
-    rows = peplife2.load(raw_root)
-    peplife_by_id = {r['source_record_id']: r for r in rows}
-    rows.extend(pepmsnd.load(raw_root))
-    rows.extend(plifepred.load(raw_root, peplife_by_id))
-    rows.extend(dramp.load(raw_root))
-    rows.extend(cavaco.load(raw_root, config_dir))
-    frame = pd.DataFrame(rows)
-    # DRAMP does not have a dedicated in-vitro column. Recover context only
-    # when the same publication and recorded chemistry have matching PEPlife
-    # observations with one consistent context. A sequence-only match is never
-    # enough. All candidate IDs stay visible for inspection.
-    peplife_index = {}
-    for r in rows:
-        if r['source'] == 'peplife2':
-            peplife_index.setdefault((r['publication_id'], chemical_signature(r)), []).append(r)
-    for idx, r in frame[frame.source.eq('dramp')].iterrows():
-        candidates = peplife_index.get((r.publication_id, chemical_signature(r)), [])
-        candidates = [c for c in candidates if c['species'] == r.species and c['matrix'] == r.matrix]
-        contexts = {c['in_vivo_in_vitro'] for c in candidates}
-        if len(contexts) == 1 and 'unknown' not in contexts:
-            frame.at[idx, 'in_vivo_in_vitro'] = next(iter(contexts))
-            frame.at[idx, 'metadata_origin'] = 'peplife2_publication_and_chemistry_match'
-            frame.at[idx, 'candidate_peplife2_ids'] = ';'.join(c['source_record_id'] for c in candidates)
+def load_source_records(root: Path, config_dir: Path | None = None, *, include_features=True) -> pd.DataFrame:
+    """Inspect source records through the single maintained source orchestrator.
+
+    :param pathlib.Path root: Data series root.
+    :param pathlib.Path config_dir: Optional reviewed Cavaco transcription directory.
+    :param bool include_features: Compute legacy overview descriptors in memory.
+    :return: Detailed compatibility view for existing scientific overviews.
+    :rtype: pandas.DataFrame
+    """
+    from proteolysis_data_manager.integration.half_life.datasets import load_adapter_records
+
+    frame = pd.DataFrame(load_adapter_records(root, config_dir))
+    if include_features:
+        descriptors = pd.DataFrame([features(sequence) for sequence in frame.sequence], index=frame.index)
+        frame = pd.concat([frame, descriptors], axis=1)
     frame['linked_peplife2_id'] = frame.get('linked_peplife2_id', pd.Series(dtype=str)).fillna('')
-    frame['source_locator'] = frame.get('source_locator', pd.Series(dtype=str)).fillna('source record id / workbook row')
-    # Attach actual source checksums/version to every observation.
-    for source, indices in frame.groupby('source').groups.items():
-        manifest = json.loads(download_manifest(root,source,legacy_fallback=True).read_text())
-        for idx in indices:
-            entry = manifest['files'][frame.at[idx, 'source_filename']]
-            frame.at[idx, 'source_file_sha256'] = entry['sha256']
-            frame.at[idx, 'source_version'] = manifest['version']
     frame['chemical_identity_complete'] = frame.apply(lambda r: r['is_standard_sequence'] and not r['sequence_contains_lowercase'] and all(known(r[k]) for k in ('chirality', 'topology', 'n_terminal_modification', 'c_terminal_modification', 'chemical_modifications')), axis=1)
     frame['chemical_identity_key'] = frame.apply(lambda r: hashlib.sha256(json.dumps(chemical_signature(r)).encode()).hexdigest()[:20] if r['chemical_identity_complete'] else '', axis=1)
     frame['reference_backbone_matches_chemistry'] = frame['chemical_identity_complete'] & frame['chirality'].eq('l') & frame['topology'].eq('linear') & frame[['n_terminal_modification', 'c_terminal_modification', 'chemical_modifications']].eq('free').all(axis=1)
@@ -120,39 +94,11 @@ def load_observations(root, config_dir=None):
 
 
 def build_normalized_dataset(root):
-    """Build the canonical snapshot, concrete source remarks and one manifest."""
-    from proteolysis_data_manager.acquisition.half_life import SOURCES
-    from proteolysis_data_manager.utils.io import sha256, write_json
-    from proteolysis_data_manager.protocols.half_life.conditions import condition_frame
-    from proteolysis_data_manager.integration.half_life.schema import CLEAN_COLUMNS, normalize_inventory, write_parquet
-    from proteolysis_data_manager.integration.half_life.remarks import write_remarks
-    root = Path(root)
-    inventory = condition_frame(load_source_records(root))
-    frame, audit = normalize_inventory(inventory)
-    path = root / 'normalized/observations.parquet'
-    write_parquet(frame, path)
-    write_remarks(inventory, audit, root)
-    package = Path(__file__).resolve().parents[2]
-    manifest = {
-        'schema_version': SCHEMA_VERSION, 'columns': CLEAN_COLUMNS,
-        'raw_representations': len(inventory), 'rows': len(frame),
-        'raw_source_rows': {source: int(inventory.source.eq(source).sum()) for source in SOURCES},
-        'shared_source_measurements': int(frame.source.map(len).gt(1).sum()),
-        'enriched_source_records': int(audit.enriched_fields.map(bool).sum()),
-        'normalized_parquet_sha256': sha256(path),
-        'sources': {source: sha256(download_manifest(root, source, legacy_fallback=True)) for source in SOURCES},
-        'implementation_sha256': {str(p.relative_to(package)): sha256(p) for p in sorted(package.rglob('*.py'))},
-        'cavaco_curated_table_sha256': sha256(Path(__file__).parent / 'adapters/resources/cavaco_validation.tsv'),
-        'class_scheme': 'short <30 min; medium [30 min,6 h]; long >6 h',
-        'scope_limitations': [
-            'Cavaco: 16 experimental validation peptides; training peptides are not reconstructed.',
-            'Reported ranges/censoring/classes are not numerical half-life points.',
-            'Documented CI may supply a representative midpoint only if no point is reported; noted in remarks.',
-            'Missing CI/SD stay null; unspecified plus/minus errors are documented in source remarks.',
-            'No physiological defaults are written to normalized reported pH/temperature fields.',
-            'Known conflicts stay separate; sequence coincidence alone never establishes measurement identity.',
-            'Normalization consolidates verified aliases; it applies no condition acceptance gates.',
-        ],
-    }
-    write_json(root / 'manifests/normalization_manifest.json', manifest)
-    return manifest
+    """Forward the previous builder name to the maintained two-table workflow.
+
+    :param pathlib.Path root: Data series root.
+    :return: The peptide and experiment tables written under ``processed``.
+    :rtype: HalfTimeDataset
+    """
+    from proteolysis_data_manager.integration.half_life.datasets import build_half_time_datasets
+    return build_half_time_datasets(root)
